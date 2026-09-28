@@ -1,0 +1,23 @@
+DEV MALHOTRA
+Bengaluru | dev.malhotra.sample@example.com | +91 98450 11223
+
+PROFILE
+Product manager with 6 years of experience in consumer fintech apps. Passionate about logistics and curious about how supply chains work.
+
+EXPERIENCE
+
+Senior Product Manager — PayNest (Series D fintech), Bengaluru | 2021 – Present
+- Owned the rewards and cashback roadmap as part of a 12-PM product organisation, reporting to a Group PM.
+- Delivered the redesigned rewards wallet as assigned in the annual plan; increased engagement by 9%.
+- Worked with the platform team on integrating two payment gateways.
+
+Product Manager — QuickLoan, Bengaluru | 2019 – 2021
+- Managed the loan application funnel within an established product process and design system.
+- Ran A/B tests on onboarding screens.
+
+EDUCATION
+MBA — IIM Indore, 2019
+B.Tech, Computer Science — NIT Surat, 2017
+
+SKILLS
+A/B testing, Amplitude, stakeholder management, Agile

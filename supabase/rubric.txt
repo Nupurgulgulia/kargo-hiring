@@ -1,0 +1,149 @@
+KARGO HIRING RUBRIC
+Derived from calibration against 8 past hires (5 rated "Exceeds Expectations", 2 "Meets Expectations", 1 "Below Expectations").
+Purpose: score incoming CVs for the Product Manager (PM) and Senior Product Manager (SPM) roles at Kargo.
+
+============================================================
+HOW THIS RUBRIC WAS BUILT
+============================================================
+Three patterns repeat across the "Exceeds Expectations" hires that do NOT appear in either job description:
+
+1. GROUND-LEVEL LOGISTICS/OPS EXPOSURE
+   Real hands-on experience working inside freight forwarding, customs, port operations,
+   or supply-chain/carrier planning — not just "curiosity" about operations, and not just
+   adjacent SaaS experience. Evidence: worked inside a CHA firm, freight forwarder,
+   port services company, or carrier/3PL operations team.
+
+2. SELF-INITIATED BUILD THAT GOT ADOPTED WITHOUT BEING ASKED
+   Noticed a gap nobody assigned them to fix, built the fix unprompted (a tool, tracker,
+   SOP, dashboard, framework), and it was organically adopted by others — not a deliverable
+   that was part of their assigned job scope.
+
+3. OWNS A CRISIS TO FULL RESOLUTION, ALONE, WITHOUT ESCALATING
+   Handled an urgent, high-stakes situation (an outage, a customs hold, an audit, an
+   account near-loss) personally through to close — often followed by documenting it
+   so it doesn't recur. Especially strong when it happens at the customer/operational
+   interface.
+
+Both job descriptions test for years of experience, feature delivery, and comfort with
+ambiguity. None of them test for the three patterns above. This rubric weights those
+patterns heavily and treats JD-explicit criteria as a smaller, still-necessary component.
+
+============================================================
+SCORING SCALE (apply to every criterion below)
+============================================================
+5 = Strong, specific, evidenced multiple times in the CV
+4 = Clear evidence, at least one strong instance
+3 = Some evidence, but partial or single instance
+2 = Weak or indirect/adjacent evidence only
+1 = No evidence in the CV
+
+Each candidate's final score = sum of (criterion score / 5) * criterion weight, for all
+criteria in the relevant role's rubric. Max score = 100.
+
+============================================================
+RUBRIC 1: PRODUCT MANAGER (PM)
+============================================================
+
+1. GROUND-LEVEL LOGISTICS/OPS EXPOSURE — Weight: 25%
+   Look for: roles inside freight forwarding, customs brokerage (CHA), port operations,
+   carrier/3PL, or supply-chain/logistics planning. Adjacent SaaS-for-logistics roles
+   (e.g., selling to or integrating with logistics companies) score lower than roles
+   actually performed inside a logistics operation.
+
+2. SELF-INITIATED BUILD ADOPTED UNPROMPTED — Weight: 25%
+   Look for: language like "identified," "built a prototype," "no one asked me to,"
+   followed by evidence of organic adoption ("adopted by X colleagues/teams," "became
+   permanent process," "became the standard"). Distinguish this from features/tools
+   built as an assigned part of the job.
+
+3. OWNS A CRISIS TO RESOLUTION, NO ESCALATION — Weight: 20%
+   Look for: a specific high-stakes incident (outage, compliance audit, urgent client
+   issue, critical bug) that the candidate personally resolved end-to-end, ideally with
+   a timeframe ("same day," "overnight," "within 3 hours") and without mention of
+   escalating to a manager.
+
+4. SHIPPED AND KILLED FEATURES WITH EVIDENCE — Weight: 15%
+   Look for: specific features shipped, usage/adoption data cited, and — critically —
+   evidence of killing something that didn't work based on data, not just shipping.
+
+5. COMFORT BUILDING STRUCTURE FROM ZERO — Weight: 15%
+   Look for: evidence of operating without existing playbooks, templates, or process,
+   and building the first version of something (a PRD template, sprint process, a
+   product function) rather than joining an existing one.
+
+------------------------------------------------------------
+CALIBRATION REFERENCE SCORES (PM rubric, past hires)
+------------------------------------------------------------
+Lavanya Iyer     — 100  (Exceeds Expectations)
+Rohan Desai      —  91  (Exceeds Expectations)
+Sunita Krishnamurthy — 88 (Exceeds Expectations)
+Meghna Tiwari    —  88  (Exceeds Expectations)
+Aditya Shetty    —  68  (Exceeds Expectations)
+Vikram Nair      —  44  (Meets Expectations)
+Preetham Rao     —  41  (Below Expectations)
+Rahul Bose       —  39  (Meets Expectations)
+
+Reference threshold: PM candidates scoring 65+ resemble Kargo's strongest past hires.
+Candidates scoring below ~45 resemble hires who did not exceed expectations.
+
+============================================================
+RUBRIC 2: SENIOR PRODUCT MANAGER (SPM)
+============================================================
+
+1. OWNS HIGH-STAKES/HARD-TO-UNDO SITUATIONS END-TO-END — Weight: 25%
+   Look for: a decision or incident with consequences that are difficult to reverse
+   (an outage, an audit, a client escalation with real revenue/reputation risk), owned
+   personally from start to close, without a committee or manager approving the call.
+
+2. GROUND-LEVEL LOGISTICS/OPS EXPOSURE — Weight: 20%
+   Same evidence bar as the PM rubric, criterion 1.
+
+3. SELF-INITIATED BUILD ADOPTED, INCREASING SCOPE — Weight: 25%
+   Same as PM rubric criterion 2, but score higher when the thing built was adopted
+   beyond the candidate's own immediate team (e.g., "adopted by 2 other regional teams,"
+   "became company-wide standard") rather than just their own team.
+
+4. INTEGRATION/PLATFORM/DATA COMPLEXITY IN AMBIGUOUS ENVIRONMENTS — Weight: 15%
+   Look for: work on integration layers, platform architecture, data pipelines, or
+   systems that had to work inside complex existing technical environments (multiple
+   third-party systems, legacy vendors, cross-system data flow).
+   Note: weighted lower than it might first appear to warrant — in calibration, this
+   criterion alone did not reliably separate "Exceeds" from "Below" hires. Use it as
+   a supporting signal, not a primary one.
+
+5. INSTITUTIONALIZES STANDARDS OTHERS ADOPT AFTER THEM — Weight: 15%
+   Look for: evidence that the candidate defined a practice, framework, or standard
+   (a scorecard methodology, onboarding framework, review process) that continued to
+   be used by others after the candidate moved on or that was adopted by other teams.
+
+------------------------------------------------------------
+CALIBRATION REFERENCE SCORES (SPM rubric, past hires)
+------------------------------------------------------------
+Lavanya Iyer     —  97  (Exceeds Expectations)
+Rohan Desai      —  94  (Exceeds Expectations)
+Sunita Krishnamurthy — 86 (Exceeds Expectations)
+Meghna Tiwari    —  83  (Exceeds Expectations)
+Aditya Shetty    —  63  (Exceeds Expectations)
+Preetham Rao     —  51  (Below Expectations)
+Vikram Nair      —  39  (Meets Expectations)
+Rahul Bose       —  36  (Meets Expectations)
+
+Reference threshold: SPM candidates scoring 60+ resemble Kargo's strongest past hires.
+
+KNOWN LIMITATION: On the SPM rubric, one "Below Expectations" hire (Preetham Rao)
+scores above two "Meets Expectations" hires. This reflects a real limit of CV-based
+scoring — the reasons a hire underperformed (judgment, collaboration, execution
+quality) are not always visible on paper. This rubric reliably separates "Exceeds"
+from "did not exceed," but should not be treated as a precise ranking within the
+lower tier. Arjun's own review of the shortlist remains the final check.
+
+============================================================
+NOTES FOR IMPLEMENTATION
+============================================================
+- Every candidate should be scored against BOTH rubrics regardless of which role
+  they applied for, since the dashboard shows both PM and SPM scores per the
+  Components Map.
+- Score from CV content only. Do not use name, email, or phone number as input to
+  scoring (these should be stripped before this step, per the privacy design).
+- If a CV provides no evidence for a criterion, score it 1 rather than guessing —
+  do not infer unstated experience.

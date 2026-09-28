@@ -1,0 +1,24 @@
+ANANYA KULKARNI
+Mumbai, India | ananya.kulkarni.sample@example.com | +91 99300 45678
+
+SUMMARY
+Product manager with 3 years in PM and 2 years inside freight forwarding operations.
+
+EXPERIENCE
+
+Product Manager — ShipDesk (logistics SaaS, seed stage), Mumbai | Jun 2023 – Present
+- First PM hire; there was no PRD template, sprint process or roadmap. Wrote the first PRD template and set up two-week sprints, now used by all 3 engineering squads.
+- Shipped automated bill-of-lading generation; 71% of active accounts used it weekly within two months.
+- Killed a "carrier chat" feature after 6 weeks when usage data showed under 4% weekly adoption; redirected the team to exception alerts.
+- During a platform outage on a Friday night, personally coordinated the rollback, called the five affected forwarders, and restored tracking within 3 hours; wrote the incident runbook we still use.
+
+Operations Executive — Allcargo Logistics (freight forwarder), Nhava Sheva | Jul 2021 – May 2023
+- Worked the export documentation desk for ocean freight; handled shipping bills and customs queries with the CHA team daily.
+- Noticed that container exceptions were tracked on paper and WhatsApp. No one asked me to, but I built a Google Sheets tracker with daily alerts; it was adopted by 3 branch teams and became the standard process.
+- Resolved a customs hold on a time-critical pharma consignment the same day by working directly with the customs broker, without escalating.
+
+EDUCATION
+B.E., Mechanical Engineering — VJTI Mumbai, 2021
+
+SKILLS
+SQL, Mixpanel, Figma, JIRA, customs documentation, ocean freight operations
