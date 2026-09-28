@@ -1,12 +1,20 @@
 import { NextResponse } from "next/server";
-import { CV_BUCKET, db } from "@/lib/supabase";
+import { one } from "@/lib/db";
 
-// Short-lived signed link to the original CV in the private bucket.
+// Streams the original CV from kargo_cv_files. Protected by the dashboard session (proxy.ts).
 export async function GET(_request: Request, ctx: RouteContext<"/api/candidates/[id]/cv">) {
   const { id } = await ctx.params;
-  const { data } = await db().from("kargo_candidates").select("cv_storage_path").eq("id", id).maybeSingle();
-  if (!data?.cv_storage_path) return NextResponse.json({ error: "No CV file stored" }, { status: 404 });
-  const { data: signed, error } = await db().storage.from(CV_BUCKET).createSignedUrl(data.cv_storage_path, 120);
-  if (error || !signed) return NextResponse.json({ error: error?.message ?? "Could not sign URL" }, { status: 500 });
-  return NextResponse.redirect(signed.signedUrl);
+  const file = await one<{ filename: string; content_type: string; data: Buffer }>(
+    "select filename, content_type, data from kargo_cv_files where candidate_id = $1",
+    [id],
+  );
+  if (!file) return NextResponse.json({ error: "No CV file stored" }, { status: 404 });
+  return new Response(new Uint8Array(file.data), {
+    headers: {
+      "content-type": file.content_type,
+      "content-disposition": `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+      "cache-control": "private, no-store",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }

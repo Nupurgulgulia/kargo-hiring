@@ -15,15 +15,15 @@ A ranked PM / SPM shortlist for Arjun. Upload a CV, pick the role, and the app s
 
 The rubric lives in the `kargo_rubrics` table and is shown at `/rubric`; the scoring prompt and weights are read from it.
 
-## Data (Supabase, `mesa-ai-track` project)
+## Data (Neon Postgres, project `dry-bird-77072578`, branch `production`)
 
-`kargo_rubrics`, `kargo_candidates` (PII only here), `kargo_scores` (one row per candidate per rubric), `kargo_briefs`, `kargo_emails`, `kargo_events` (audit trail), plus the private storage bucket `kargo-cvs`. RLS is on with no policies, so only the server's secret key can read anything. Schema: `supabase/schema.sql`.
+`kargo_rubrics`, `kargo_candidates` (PII only here), `kargo_scores` (one row per candidate per rubric), `kargo_briefs`, `kargo_emails`, `kargo_events` (audit trail), and `kargo_cv_files` (original uploads). The server connects with `pg` over the pooled `DATABASE_URL` (`src/lib/db.ts`); nothing talks to the database from the browser. Schema: `db/schema.sql`. Rubric seed: `db/seed_rubrics.sql`, checked against `db/rubric.txt`.
 
 ## Setup
 
-1. Copy `.env.example` to `.env.local` and fill in the keys.
-2. `npm install && npm run dev`, then open http://localhost:3000.
-3. Try `samples/*.txt`.
+1. `neon link --project-id dry-bird-77072578 --branch production` (writes `DATABASE_URL` / `DATABASE_URL_UNPOOLED` to `.env.local`), then add the remaining keys from `.env.example`.
+2. `npm install && npm run db:setup` to create the tables and seed both rubrics (safe to re-run).
+3. `npm run dev`, then open http://localhost:3000 and try `samples/*.txt`.
 
 On Vercel, set the same variables under Project → Settings → Environment Variables and redeploy.
 
@@ -32,4 +32,5 @@ On Vercel, set the same variables under Project → Settings → Environment Var
 ## Scripts
 
 - `npm test`: PII redaction and rubric-math unit tests
+- `npm run db:setup`: apply schema and seed rubrics to Neon
 - `npm run build`, `npm run lint`

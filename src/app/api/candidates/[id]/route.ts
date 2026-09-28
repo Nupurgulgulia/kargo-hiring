@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { redact } from "@/lib/pii";
-import { CV_BUCKET, db, logEvent } from "@/lib/supabase";
+import { logEvent, one, query } from "@/lib/db";
 
 const DECISIONS = ["pending", "invite", "reject", "hold"];
 
@@ -24,7 +24,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/candidates
 
   // A corrected name/email/phone must also be scrubbed from the stored text before any re-run.
   if (update.full_name || update.email || update.phone) {
-    const { data: cur } = await db().from("kargo_candidates").select("redacted_text").eq("id", id).single();
+    const cur = await one<{ redacted_text: string | null }>("select redacted_text from kargo_candidates where id = $1", [id]);
     if (cur?.redacted_text) {
       update.redacted_text = redact(cur.redacted_text, {
         full_name: (update.full_name as string) ?? null,
@@ -34,8 +34,12 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/candidates
     }
   }
 
-  const { error } = await db().from("kargo_candidates").update(update).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Column names come only from the whitelist above; values are bound parameters.
+  const cols = Object.keys(update);
+  await query(`update kargo_candidates set ${cols.map((k, i) => `${k} = $${i + 2}`).join(", ")} where id = $1`, [
+    id,
+    ...cols.map((k) => update[k]),
+  ]);
 
   const changed = Object.keys(update).filter((k) => k !== "redacted_text");
   await logEvent(id, "arjun", "updated", {
@@ -48,9 +52,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/candidates
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/candidates/[id]">) {
   const { id } = await ctx.params;
-  const { data } = await db().from("kargo_candidates").select("cv_storage_path").eq("id", id).maybeSingle();
-  if (data?.cv_storage_path) await db().storage.from(CV_BUCKET).remove([data.cv_storage_path]);
-  const { error } = await db().from("kargo_candidates").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Cascades to scores, brief, email, events and the stored CV file.
+  await query("delete from kargo_candidates where id = $1", [id]);
   return NextResponse.json({ ok: true });
 }

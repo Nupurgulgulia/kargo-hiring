@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { redraftEmail } from "@/lib/pipeline";
-import { db, logEvent } from "@/lib/supabase";
+import { logEvent, query } from "@/lib/db";
 
 export const maxDuration = 60;
 
@@ -11,14 +11,12 @@ export async function PUT(request: Request, ctx: RouteContext<"/api/candidates/[
   if (typeof subject !== "string" || typeof body !== "string" || !subject.trim() || !body.trim()) {
     return NextResponse.json({ error: "Subject and body are required" }, { status: 400 });
   }
-  const { data, error } = await db()
-    .from("kargo_emails")
-    .update({ subject, body, updated_at: new Date().toISOString() })
-    .eq("candidate_id", id)
-    .in("status", ["draft", "failed"])
-    .select("candidate_id");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data?.length) return NextResponse.json({ error: "Draft can't be edited after sending" }, { status: 409 });
+  const data = await query(
+    `update kargo_emails set subject = $2, body = $3, updated_at = now()
+     where candidate_id = $1 and status in ('draft', 'failed') returning candidate_id`,
+    [id, subject, body],
+  );
+  if (!data.length) return NextResponse.json({ error: "Draft can't be edited after sending" }, { status: 409 });
   await logEvent(id, "arjun", "email_edited");
   return NextResponse.json({ ok: true });
 }

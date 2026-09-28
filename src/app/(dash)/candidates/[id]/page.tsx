@@ -11,7 +11,7 @@ import {
 import { Badge, Card, CardHeader, ScoreBar } from "@/components/ui";
 import { getCandidateDetail } from "@/lib/queries";
 import { tierFor } from "@/lib/scoring";
-import { getRubrics } from "@/lib/supabase";
+import { getRubrics } from "@/lib/db";
 import type { EventRow, Role, ScoreRow } from "@/lib/types";
 import { ROLE_TITLES } from "@/lib/types";
 
@@ -172,17 +172,17 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-good">Strengths</h3>
-                    <ul className="mt-1.5 list-disc space-y-1 pl-4">{brief.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                    <ul className="mt-1.5 list-disc space-y-1 pl-4">{(brief.strengths ?? []).map((s, i) => <li key={i}>{s}</li>)}</ul>
                   </div>
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-warn">Gaps and risks</h3>
-                    <ul className="mt-1.5 list-disc space-y-1 pl-4">{brief.gaps.map((s, i) => <li key={i}>{s}</li>)}</ul>
+                    <ul className="mt-1.5 list-disc space-y-1 pl-4">{(brief.gaps ?? []).map((s, i) => <li key={i}>{s}</li>)}</ul>
                   </div>
                 </div>
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Questions to ask</h3>
                   <ol className="mt-1.5 space-y-2.5">
-                    {brief.questions.map((q, i) => (
+                    {(brief.questions ?? []).map((q, i) => (
                       <li key={i} className="flex gap-2.5">
                         <span className="tabular text-muted">{i + 1}.</span>
                         <div>
@@ -193,7 +193,7 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
                     ))}
                   </ol>
                 </div>
-                {brief.verify.length > 0 && (
+                {(brief.verify ?? []).length > 0 && (
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Verify in references</h3>
                     <ul className="mt-1.5 list-disc space-y-1 pl-4">{brief.verify.map((s, i) => <li key={i}>{s}</li>)}</ul>

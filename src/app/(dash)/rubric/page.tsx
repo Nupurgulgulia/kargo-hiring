@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { Card, CardHeader } from "@/components/ui";
-import { getRubrics } from "@/lib/supabase";
+import { getRubrics } from "@/lib/db";
 import type { Role } from "@/lib/types";
 
 export default async function RubricPage() {

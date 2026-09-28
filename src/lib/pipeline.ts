@@ -1,9 +1,9 @@
 import "server-only";
 import { draftEmail, extractProfile, scoreAgainstRubric, writeBrief } from "./ai";
+import { getRubrics, json, logEvent, one, query } from "./db";
 import { GEMINI_MODEL } from "./gemini";
 import { assertNoPII } from "./pii";
 import { recommendationFor } from "./scoring";
-import { db, getRubrics, logEvent } from "./supabase";
 import type { Brief, Candidate, EmailKind, Extraction, Role } from "./types";
 import { ROLES } from "./types";
 
@@ -13,9 +13,17 @@ import { ROLES } from "./types";
 // Nothing in here sends email. Sending happens only from the dashboard's Send action.
 
 async function loadCandidate(id: string): Promise<Candidate> {
-  const { data, error } = await db().from("kargo_candidates").select("*").eq("id", id).single();
-  if (error || !data) throw new Error(`Candidate ${id} not found`);
-  return data as Candidate;
+  const row = await one<Candidate>("select * from kargo_candidates where id = $1", [id]);
+  if (!row) throw new Error(`Candidate ${id} not found`);
+  return row;
+}
+
+async function setCandidate(id: string, fields: Record<string, unknown>) {
+  const keys = Object.keys(fields);
+  await query(
+    `update kargo_candidates set ${keys.map((k, i) => `${k} = $${i + 2}`).join(", ")} where id = $1`,
+    [id, ...keys.map((k) => fields[k])],
+  );
 }
 
 export async function processCandidate(id: string) {
@@ -31,7 +39,7 @@ export async function processCandidate(id: string) {
     // AI step 1 — extraction
     const extraction = await extractProfile(c.redacted_text);
     assertNoPII(JSON.stringify(extraction), contact);
-    await db().from("kargo_candidates").update({ extracted: extraction }).eq("id", id);
+    await query("update kargo_candidates set extracted = $2::jsonb where id = $1", [id, json(extraction)]);
     await logEvent(id, "ai", "extracted", { model: GEMINI_MODEL, roles: extraction.roles.length });
 
     // AI step 2 — score against BOTH rubrics, regardless of the role applied for
@@ -41,34 +49,26 @@ export async function processCandidate(id: string) {
         ...(await scoreAgainstRubric(rubrics[role], c.redacted_text!, extraction)),
       })),
     );
-    const { error: scoreErr } = await db()
-      .from("kargo_scores")
-      .upsert(
-        scored.map((s) => ({
-          candidate_id: id,
-          role: s.role,
-          total: s.total,
-          criteria: s.criteria,
-          summary: s.summary,
-          model: GEMINI_MODEL,
-          created_at: new Date().toISOString(),
-        })),
-        { onConflict: "candidate_id,role" },
+    for (const s of scored) {
+      await query(
+        `insert into kargo_scores (candidate_id, role, total, criteria, summary, model)
+         values ($1, $2, $3, $4::jsonb, $5, $6)
+         on conflict (candidate_id, role) do update set
+           total = excluded.total, criteria = excluded.criteria, summary = excluded.summary,
+           model = excluded.model, created_at = now()`,
+        [id, s.role, s.total, json(s.criteria), s.summary, GEMINI_MODEL],
       );
-    if (scoreErr) throw new Error(`Saving scores failed: ${scoreErr.message}`);
+    }
 
     const byRole = Object.fromEntries(scored.map((s) => [s.role, s])) as Record<Role, (typeof scored)[number]>;
     const applied = byRole[c.applied_role];
     const recommendation = recommendationFor(rubrics[c.applied_role], applied.total);
-    await db()
-      .from("kargo_candidates")
-      .update({
-        pm_score: byRole.PM.total,
-        spm_score: byRole.SPM.total,
-        applied_score: applied.total,
-        recommendation,
-      })
-      .eq("id", id);
+    await setCandidate(id, {
+      pm_score: byRole.PM.total,
+      spm_score: byRole.SPM.total,
+      applied_score: applied.total,
+      recommendation,
+    });
     await logEvent(id, "ai", "scored", {
       PM: byRole.PM.total,
       SPM: byRole.SPM.total,
@@ -83,19 +83,21 @@ export async function processCandidate(id: string) {
       extraction,
       scored.map((s) => ({ role: s.role, total: s.total, threshold: rubrics[s.role].threshold, criteria: s.criteria })),
     );
-    await db()
-      .from("kargo_briefs")
-      .upsert({ candidate_id: id, content: brief, model: GEMINI_MODEL, created_at: new Date().toISOString() });
+    await query(
+      `insert into kargo_briefs (candidate_id, content, model) values ($1, $2::jsonb, $3)
+       on conflict (candidate_id) do update set content = excluded.content, model = excluded.model, created_at = now()`,
+      [id, json(brief), GEMINI_MODEL],
+    );
     await logEvent(id, "ai", "brief_written", { model: GEMINI_MODEL });
 
     // AI step 4 — outreach draft (never sent here)
     await saveDraft(id, recommendation, c.applied_role, extraction, brief);
 
-    await db().from("kargo_candidates").update({ status: "ready", error: null }).eq("id", id);
+    await setCandidate(id, { status: "ready", error: null });
     await logEvent(id, "system", "pipeline_complete", { ms: Date.now() - started });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await db().from("kargo_candidates").update({ status: "error", error: message }).eq("id", id);
+    await setCandidate(id, { status: "error", error: message });
     await logEvent(id, "system", "pipeline_failed", { error: message });
   }
 }
@@ -108,17 +110,14 @@ async function saveDraft(
   brief: Brief | null,
 ) {
   const draft = await draftEmail(kind, role, extraction, brief);
-  const { error } = await db().from("kargo_emails").upsert({
-    candidate_id: id,
-    kind,
-    subject: draft.subject,
-    body: draft.body,
-    status: "draft",
-    error: null,
-    model: GEMINI_MODEL,
-    updated_at: new Date().toISOString(),
-  });
-  if (error) throw new Error(`Saving draft failed: ${error.message}`);
+  await query(
+    `insert into kargo_emails (candidate_id, kind, subject, body, status, error, model)
+     values ($1, $2, $3, $4, 'draft', null, $5)
+     on conflict (candidate_id) do update set
+       kind = excluded.kind, subject = excluded.subject, body = excluded.body,
+       status = 'draft', error = null, model = excluded.model, updated_at = now()`,
+    [id, kind, draft.subject, draft.body, GEMINI_MODEL],
+  );
   await logEvent(id, "ai", "email_drafted", { kind, model: GEMINI_MODEL });
 }
 
@@ -126,11 +125,11 @@ async function saveDraft(
 export async function redraftEmail(id: string, kind: EmailKind) {
   const c = await loadCandidate(id);
   if (!c.extracted) throw new Error("Candidate has not been processed yet");
-  const { data: existing } = await db().from("kargo_emails").select("status").eq("candidate_id", id).maybeSingle();
+  const existing = await one<{ status: string }>("select status from kargo_emails where candidate_id = $1", [id]);
   if (existing?.status === "sent" || existing?.status === "sending") {
     throw new Error("This candidate's email has already been sent");
   }
   assertNoPII(JSON.stringify(c.extracted), { full_name: c.full_name, email: c.email, phone: c.phone });
-  const { data: briefRow } = await db().from("kargo_briefs").select("content").eq("candidate_id", id).maybeSingle();
-  await saveDraft(id, kind, c.applied_role, c.extracted, (briefRow?.content as Brief) ?? null);
+  const briefRow = await one<{ content: Brief }>("select content from kargo_briefs where candidate_id = $1", [id]);
+  await saveDraft(id, kind, c.applied_role, c.extracted, briefRow?.content ?? null);
 }

@@ -1,5 +1,5 @@
--- Kargo hiring schema (applied to Supabase project mesa-ai-track as migration "kargo_hiring_schema").
--- Rubric content is seeded by seed_rubrics.sql.
+-- Kargo hiring schema for Neon Postgres. Identical to the original Supabase kargo_* tables;
+-- rubric content is seeded by seed_rubrics.sql. Apply with `npm run db:setup`.
 
 create table if not exists public.kargo_rubrics (
   role text primary key check (role in ('PM','SPM')),
@@ -78,13 +78,21 @@ create table if not exists public.kargo_events (
 );
 create index if not exists kargo_events_candidate_idx on public.kargo_events (candidate_id, at);
 
--- RLS on, no policies: only the server's secret key can read or write.
+-- Original CV files (previously in Supabase Storage). Kept separate so kargo_candidates is unchanged.
+create table if not exists public.kargo_cv_files (
+  candidate_id uuid primary key references public.kargo_candidates(id) on delete cascade,
+  filename text not null,
+  content_type text not null,
+  data bytea not null,
+  created_at timestamptz not null default now()
+);
+
+-- RLS on, no policies: the app connects as the table owner (which bypasses RLS), and anything
+-- else, e.g. Neon's Data API if it is ever enabled, gets no access.
 alter table public.kargo_rubrics    enable row level security;
 alter table public.kargo_candidates enable row level security;
 alter table public.kargo_scores     enable row level security;
 alter table public.kargo_briefs     enable row level security;
 alter table public.kargo_emails     enable row level security;
 alter table public.kargo_events     enable row level security;
-
-insert into storage.buckets (id, name, public) values ('kargo-cvs', 'kargo-cvs', false)
-on conflict (id) do nothing;
+alter table public.kargo_cv_files   enable row level security;

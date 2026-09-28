@@ -1,5 +1,5 @@
 import "server-only";
-import { db } from "./supabase";
+import { one, query } from "./db";
 import type { Brief, Candidate, EmailRow, EventRow, ScoreRow } from "./types";
 
 export type ListRow = Pick<
@@ -23,41 +23,24 @@ export type ListRow = Pick<
 };
 
 export async function listCandidates(): Promise<ListRow[]> {
-  const { data, error } = await db()
-    .from("kargo_candidates")
-    .select(
-      "id, created_at, applied_role, full_name, email, status, error, decision, pm_score, spm_score, applied_score, recommendation, extracted, kargo_emails(status, kind)",
-    )
-    .order("applied_score", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((r) => {
-    const { extracted, kargo_emails, ...rest } = r as unknown as Candidate & {
-      kargo_emails: { status: EmailRow["status"]; kind: EmailRow["kind"] } | null;
-    };
-    return {
-      ...rest,
-      headline: extracted?.headline ?? null,
-      email_status: kargo_emails?.status ?? null,
-      email_kind: kargo_emails?.kind ?? null,
-    } as ListRow;
-  });
+  return query<ListRow>(
+    `select c.id, c.created_at, c.applied_role, c.full_name, c.email, c.status, c.error, c.decision,
+            c.pm_score, c.spm_score, c.applied_score, c.recommendation,
+            c.extracted->>'headline' as headline, e.status as email_status, e.kind as email_kind
+       from kargo_candidates c
+       left join kargo_emails e on e.candidate_id = c.id
+      order by c.applied_score desc nulls last, c.created_at desc`,
+  );
 }
 
 export async function getCandidateDetail(id: string) {
-  const [c, scores, brief, email, events] = await Promise.all([
-    db().from("kargo_candidates").select("*").eq("id", id).maybeSingle(),
-    db().from("kargo_scores").select("*").eq("candidate_id", id),
-    db().from("kargo_briefs").select("content").eq("candidate_id", id).maybeSingle(),
-    db().from("kargo_emails").select("*").eq("candidate_id", id).maybeSingle(),
-    db().from("kargo_events").select("*").eq("candidate_id", id).order("at", { ascending: false }).limit(100),
+  const [candidate, scores, brief, email, events] = await Promise.all([
+    one<Candidate>("select * from kargo_candidates where id = $1", [id]),
+    query<ScoreRow>("select * from kargo_scores where candidate_id = $1", [id]),
+    one<{ content: Brief }>("select content from kargo_briefs where candidate_id = $1", [id]),
+    one<EmailRow>("select * from kargo_emails where candidate_id = $1", [id]),
+    query<EventRow>("select * from kargo_events where candidate_id = $1 order by at desc limit 100", [id]),
   ]);
-  if (!c.data) return null;
-  return {
-    candidate: c.data as Candidate,
-    scores: (scores.data ?? []) as ScoreRow[],
-    brief: (brief.data?.content as Brief) ?? null,
-    email: (email.data as EmailRow) ?? null,
-    events: (events.data ?? []) as EventRow[],
-  };
+  if (!candidate) return null;
+  return { candidate, scores, brief: brief?.content ?? null, email, events };
 }

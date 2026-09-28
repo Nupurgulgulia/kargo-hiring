@@ -2,7 +2,7 @@ import { after, NextResponse } from "next/server";
 import { ACCEPTED_EXTENSIONS, extractCvText } from "@/lib/cv-parse";
 import { assertNoPII, detectContact, redact } from "@/lib/pii";
 import { processCandidate } from "@/lib/pipeline";
-import { CV_BUCKET, db, logEvent } from "@/lib/supabase";
+import { logEvent, one, query } from "@/lib/db";
 import type { Role } from "@/lib/types";
 
 export const maxDuration = 300;
@@ -60,26 +60,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: (e as Error).message }, { status: 422 });
   }
 
-  const { data: row, error } = await db()
-    .from("kargo_candidates")
-    .insert({
-      applied_role: role,
-      full_name: contact.full_name,
-      email: contact.email,
-      phone: contact.phone,
-      cv_filename: file.name,
-      redacted_text: redacted,
-      status: "processing",
-    })
-    .select("id")
-    .single();
-  if (error || !row) return NextResponse.json({ error: error?.message ?? "Insert failed" }, { status: 500 });
-
-  const path = `${row.id}/${file.name.replace(/[^\w.\-]+/g, "_")}`;
-  const { error: upErr } = await db()
-    .storage.from(CV_BUCKET)
-    .upload(path, buffer, { contentType: file.type || "application/octet-stream", upsert: true });
-  if (!upErr) await db().from("kargo_candidates").update({ cv_storage_path: path }).eq("id", row.id);
+  // The original file is kept in kargo_cv_files; cv_storage_path records where it lives.
+  const row = await one<{ id: string }>(
+    `insert into kargo_candidates (applied_role, full_name, email, phone, cv_filename, cv_storage_path, redacted_text, status)
+     values ($1, $2, $3, $4, $5, 'kargo_cv_files', $6, 'processing') returning id`,
+    [role, contact.full_name, contact.email, contact.phone, file.name, redacted],
+  );
+  if (!row) return NextResponse.json({ error: "Insert failed" }, { status: 500 });
+  await query("insert into kargo_cv_files (candidate_id, filename, content_type, data) values ($1, $2, $3, $4)", [
+    row.id,
+    file.name,
+    file.type || "application/octet-stream",
+    buffer,
+  ]);
 
   await logEvent(row.id, "arjun", "cv_uploaded", {
     role,
