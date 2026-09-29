@@ -12,6 +12,7 @@ import { Badge, Card, CardHeader, ScoreBar } from "@/components/ui";
 import { getCandidateDetail } from "@/lib/queries";
 import { tierFor } from "@/lib/scoring";
 import { getRubrics } from "@/lib/db";
+import { testRecipient } from "@/lib/email";
 import type { EventRow, Role, ScoreRow } from "@/lib/types";
 import { ROLE_TITLES } from "@/lib/types";
 
@@ -27,6 +28,7 @@ const EVENT_LABELS: Record<string, string> = {
   redraft_requested: "Redraft requested",
   email_edited: "Draft edited",
   email_sent: "Email sent",
+  email_test_sent: "Test email sent",
   email_send_failed: "Send failed",
   updated: "Record updated",
 };
@@ -36,6 +38,7 @@ function describe(e: EventRow): string | null {
   if (e.action === "scored") return `PM ${d.PM} · SPM ${d.SPM} → ${d.recommendation === "invite" ? "interview" : "decline"} (line ${d.threshold})`;
   if (e.action === "email_drafted" || e.action === "redraft_requested") return String(d.kind ?? "");
   if (e.action === "email_sent") return `${d.kind} to ${d.to}`;
+  if (e.action === "email_test_sent") return `${d.kind} to ${d.to} (instead of ${d.intended ?? "no email on file"})`;
   if (e.action === "pipeline_failed" || e.action === "email_send_failed") return String(d.error ?? "");
   if (e.action === "updated") {
     const parts = [d.decision ? `decision: ${d.decision}` : null, d.notes ? `notes: “${String(d.notes).slice(0, 140)}”` : null];
@@ -219,7 +222,7 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
 
         <aside className="min-w-0 space-y-5">
           {/* Remount on every server-side draft change (save, redraft, send) to reset local edits. */}
-          {email && <EmailComposer key={`${email.updated_at}-${email.status}`} candidate={c} email={email} recommendation={c.recommendation} />}
+          {email && <EmailComposer key={`${email.updated_at}-${email.status}`} candidate={c} email={email} recommendation={c.recommendation} testRecipient={testRecipient()} />}
           <DecisionNotes candidate={c} />
           <ContactEditor candidate={c} />
           <Card>

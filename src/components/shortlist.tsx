@@ -18,7 +18,15 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "todo", label: "Needs your action" },
 ];
 
-export function Shortlist({ rows, thresholds }: { rows: ListRow[]; thresholds: Record<Role, number> }) {
+export function Shortlist({
+  rows,
+  thresholds,
+  testRecipient = null,
+}: {
+  rows: ListRow[];
+  thresholds: Record<Role, number>;
+  testRecipient?: string | null;
+}) {
   const router = useRouter();
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("applied");
@@ -148,7 +156,7 @@ export function Shortlist({ rows, thresholds }: { rows: ListRow[]; thresholds: R
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       {r.email_kind && (r.email_status === "draft" || r.email_status === "failed") && (
-                        <SendButton small candidateId={r.id} kind={r.email_kind} to={r.email} />
+                        <SendButton small candidateId={r.id} kind={r.email_kind} to={r.email} testRecipient={testRecipient} />
                       )}
                       <Link href={`/candidates/${r.id}`} className="whitespace-nowrap text-xs font-medium text-accent hover:underline">
                         Review →

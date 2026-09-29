@@ -15,6 +15,7 @@ export function SendButton({
   disabledReason,
   small = false,
   onBeforeSend,
+  testRecipient = null,
 }: {
   candidateId: string;
   kind: EmailKind;
@@ -23,12 +24,13 @@ export function SendButton({
   disabledReason?: string | null;
   small?: boolean;
   onBeforeSend?: () => Promise<boolean>;
+  testRecipient?: string | null;
 }) {
   const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const reason = disabledReason ?? (!to ? "Add an email address first" : null);
+  const reason = disabledReason ?? (!to && !testRecipient ? "Add an email address first" : null);
 
   useEffect(() => {
     const d = dialogRef.current;
@@ -61,7 +63,9 @@ export function SendButton({
     }
   }
 
-  const label = kind === "invite" ? "Send invite" : "Send rejection";
+  const label = testRecipient
+    ? kind === "invite" ? "Test-send invite" : "Test-send rejection"
+    : kind === "invite" ? "Send invite" : "Send rejection";
   return (
     <>
       <button
@@ -78,15 +82,28 @@ export function SendButton({
         className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-0 text-ink backdrop:bg-black/40"
       >
         <div className="p-5">
-          <h3 className="font-semibold">{kind === "invite" ? "Send interview invite?" : "Send rejection?"}</h3>
-          <p className="mt-2 text-sm text-muted">
-            This sends the email now via Resend. It can&apos;t be unsent.
-          </p>
+          <h3 className="font-semibold">
+            {testRecipient ? "Test-send " : "Send "}
+            {kind === "invite" ? "interview invite?" : "rejection?"}
+          </h3>
+          {testRecipient ? (
+            <p className="mt-2 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+              Test mode: this goes to {testRecipient}, not the candidate. The draft stays unsent.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-muted">This sends the email now via Resend. It can&apos;t be unsent.</p>
+          )}
           <dl className="mt-4 space-y-1.5 rounded-lg bg-surface-2 p-3 text-sm">
             <div className="flex gap-2">
               <dt className="w-16 shrink-0 text-muted">To</dt>
-              <dd className="min-w-0 break-all font-medium">{to}</dd>
+              <dd className="min-w-0 break-all font-medium">{testRecipient ?? to}</dd>
             </div>
+            {testRecipient && (
+              <div className="flex gap-2">
+                <dt className="w-16 shrink-0 text-muted">Instead of</dt>
+                <dd className="min-w-0 break-all text-muted line-through">{to ?? "no email on file"}</dd>
+              </div>
+            )}
             {subject && (
               <div className="flex gap-2">
                 <dt className="w-16 shrink-0 text-muted">Subject</dt>

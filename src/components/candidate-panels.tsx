@@ -35,10 +35,12 @@ export function EmailComposer({
   candidate,
   email,
   recommendation,
+  testRecipient = null,
 }: {
   candidate: Pick<Candidate, "id" | "full_name" | "email">;
   email: EmailRow;
   recommendation: EmailKind | null;
+  testRecipient?: string | null;
 }) {
   const router = useRouter();
   const [subject, setSubject] = useState(email.subject);
@@ -124,6 +126,7 @@ export function EmailComposer({
                 to={candidate.email}
                 subject={preview(subject)}
                 onBeforeSend={dirty ? save : undefined}
+                testRecipient={testRecipient}
               />
               <button className={buttonClass.secondary} onClick={save} disabled={!dirty || busy !== null}>
                 {busy === "save" ? "Saving…" : "Save draft"}
@@ -132,7 +135,7 @@ export function EmailComposer({
                 {busy === "redraft" ? "Drafting…" : `Redraft as ${other === "invite" ? "invite" : "rejection"}`}
               </button>
             </div>
-            {!candidate.email && <p className="text-xs text-warn">No email on file. Add one under Contact details to send.</p>}
+            {!candidate.email && !testRecipient && <p className="text-xs text-warn">No email on file. Add one under Contact details to send.</p>}
           </>
         ) : (
           <div className="rounded-lg bg-surface-2 p-3 text-sm">

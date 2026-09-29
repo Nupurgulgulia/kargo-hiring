@@ -1,8 +1,15 @@
 import Link from "next/link";
+import { testRecipient } from "@/lib/email";
 
 export default function DashLayout({ children }: LayoutProps<"/">) {
+  const testTo = testRecipient();
   return (
     <>
+      {testTo && (
+        <div className="bg-warn-soft px-4 py-1.5 text-center text-xs font-medium text-warn">
+          Email test mode: every send goes to {testTo}, not to candidates.
+        </div>
+      )}
       <header className="sticky top-0 z-20 border-b border-line bg-surface/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">

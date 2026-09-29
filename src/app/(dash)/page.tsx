@@ -3,6 +3,7 @@ import { Shortlist } from "@/components/shortlist";
 import { Uploader } from "@/components/uploader";
 import { listCandidates } from "@/lib/queries";
 import { getRubrics } from "@/lib/db";
+import { testRecipient } from "@/lib/email";
 
 export default async function DashboardPage() {
   await connection();
@@ -36,7 +37,11 @@ export default async function DashboardPage() {
 
       <Uploader />
 
-      <Shortlist rows={rows} thresholds={{ PM: rubrics.PM.threshold, SPM: rubrics.SPM.threshold }} />
+      <Shortlist
+        rows={rows}
+        thresholds={{ PM: rubrics.PM.threshold, SPM: rubrics.SPM.threshold }}
+        testRecipient={testRecipient()}
+      />
     </div>
   );
 }
