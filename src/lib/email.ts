@@ -2,6 +2,7 @@ import "server-only";
 import { Resend } from "resend";
 import { logEvent, one, query } from "./db";
 import { firstName } from "./pii";
+import { redactSecrets } from "./secrets";
 import type { Candidate, EmailRow } from "./types";
 
 // Fills the {{first_name}} placeholder. The AI never sees the name; it's inserted here.
@@ -52,7 +53,7 @@ export async function sendCandidateEmail(candidateId: string) {
   );
 
   if (error || !data) {
-    const msg = error?.message ?? "Unknown Resend error";
+    const msg = redactSecrets(error?.message ?? "Unknown Resend error");
     await query("update kargo_emails set status = 'failed', error = $2 where candidate_id = $1", [candidateId, msg]);
     await logEvent(candidateId, "arjun", "email_send_failed", { error: msg, ...(testTo ? { test: true, to } : {}) });
     throw new Error(msg);

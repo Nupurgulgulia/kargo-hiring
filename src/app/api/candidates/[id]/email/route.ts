@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { redraftEmail } from "@/lib/pipeline";
 import { logEvent, query } from "@/lib/db";
+import { errorMessage } from "@/lib/secrets";
 
 export const maxDuration = 60;
 
@@ -33,6 +34,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/candidates/
     await redraftEmail(id, kind);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 400 });
   }
 }

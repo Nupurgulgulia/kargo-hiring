@@ -1,6 +1,7 @@
 import "server-only";
 import { attachDatabasePool } from "@vercel/functions";
 import { Pool, types, type QueryResultRow } from "pg";
+import { redactSecrets } from "./secrets";
 import type { EventRow, Rubric, Role } from "./types";
 
 // Direct Postgres (Neon) access. The pooled DATABASE_URL goes through PgBouncer; on Vercel,
@@ -54,6 +55,6 @@ export async function logEvent(
     candidateId,
     actor,
     action,
-    detail ? json(detail) : null,
+    detail ? redactSecrets(json(detail)) : null,
   ]);
 }

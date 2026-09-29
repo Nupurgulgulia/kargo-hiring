@@ -16,8 +16,13 @@ export async function generateJson<T>(opts: {
   schema: Schema;
   temperature?: number;
 }): Promise<T> {
-  const key = process.env.GEMINI_API_KEY;
+  const key = process.env.GEMINI_API_KEY?.trim();
   if (!key) throw new Error("GEMINI_API_KEY is not set");
+  // Never quote the key in an error: a pasted key with a space or line break would otherwise
+  // be echoed back by fetch as an "invalid header value".
+  if (/\s/.test(key)) {
+    throw new Error("GEMINI_API_KEY contains a space or line break. Re-paste it as a single line in Vercel, then redeploy.");
+  }
 
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: opts.system }] },

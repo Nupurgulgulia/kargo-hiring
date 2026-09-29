@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sendCandidateEmail } from "@/lib/email";
+import { errorMessage } from "@/lib/secrets";
 
 // The ONLY path that sends email. Reached solely from the Send button (with confirmation)
 // on the dashboard; there is no automatic or scheduled caller.
@@ -13,6 +14,6 @@ export async function POST(request: Request, ctx: RouteContext<"/api/candidates/
     const result = await sendCandidateEmail(id);
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 400 });
   }
 }

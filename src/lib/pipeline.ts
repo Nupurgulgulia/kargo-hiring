@@ -4,6 +4,7 @@ import { getRubrics, json, logEvent, one, query } from "./db";
 import { GEMINI_MODEL } from "./gemini";
 import { assertNoPII } from "./pii";
 import { recommendationFor } from "./scoring";
+import { errorMessage } from "./secrets";
 import type { Brief, Candidate, EmailKind, Extraction, Role } from "./types";
 import { ROLES } from "./types";
 
@@ -96,7 +97,7 @@ export async function processCandidate(id: string) {
     await setCandidate(id, { status: "ready", error: null });
     await logEvent(id, "system", "pipeline_complete", { ms: Date.now() - started });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = errorMessage(err);
     await setCandidate(id, { status: "error", error: message });
     await logEvent(id, "system", "pipeline_failed", { error: message });
   }

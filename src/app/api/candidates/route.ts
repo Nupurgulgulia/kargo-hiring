@@ -4,6 +4,7 @@ import { assertNoPII, detectContact, redact } from "@/lib/pii";
 import { processCandidate } from "@/lib/pipeline";
 import { logEvent, one, query } from "@/lib/db";
 import type { Role } from "@/lib/types";
+import { errorMessage } from "@/lib/secrets";
 
 export const maxDuration = 300;
 
@@ -32,7 +33,7 @@ export async function POST(request: Request) {
   try {
     rawText = await extractCvText(file.name, buffer);
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 422 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 422 });
   }
 
   const detected = detectContact(rawText);
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   try {
     assertNoPII(redacted, contact);
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 422 });
+    return NextResponse.json({ error: errorMessage(e) }, { status: 422 });
   }
 
   // The original file is kept in kargo_cv_files; cv_storage_path records where it lives.
