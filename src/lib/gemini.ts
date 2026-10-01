@@ -1,19 +1,23 @@
 import "server-only";
 import {
   backoffMs,
+  CALL_BUDGET_MS,
   describeGeminiError,
   isRetryable,
   MAX_ATTEMPTS,
   OVERLOADS_BEFORE_SWITCH,
+  parseQuota,
   rankFlashModels,
+  statusLabel,
 } from "./gemini-errors";
 
 // Thin client for the Gemini REST API with JSON-schema constrained output.
 // Every AI step (extraction, scoring, brief, email) goes through generateJson().
 //
 // Model chain: GEMINI_MODEL, then GEMINI_FALLBACK_MODEL (comma-separated), then any other Flash
-// models this key can use (discovered via models.list). A model is skipped on 404, and left after
-// repeated overloads. The model that last succeeded is tried first on the next call.
+// models this key can use (discovered via models.list). A model is skipped on 404, left at once on a
+// quota error (429) and set aside for a while, and left after repeated overloads (5xx). The model that
+// last succeeded is tried first on the next call. Each call has a time budget (CALL_BUDGET_MS).
 
 export const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
 const CONFIGURED_FALLBACKS = (process.env.GEMINI_FALLBACK_MODEL ?? "")
@@ -25,6 +29,8 @@ const API = "https://generativelanguage.googleapis.com/v1beta";
 
 let workingModel: string | null = null;
 const unavailable = new Set<string>();
+// Models that hit a quota (429), set aside until this time so later calls skip them.
+const coolingUntil = new Map<string, number>();
 let discovery: Promise<{ models: string[]; failed?: string }> | null = null;
 
 // The model that most recently produced a result, for the record stored with each AI output.
@@ -67,8 +73,9 @@ export async function generateJson<T>(opts: {
     },
   });
 
+  const now = Date.now();
   const chain = [...new Set([workingModel, GEMINI_MODEL, ...CONFIGURED_FALLBACKS].filter((m): m is string => !!m))].filter(
-    (m) => !unavailable.has(m),
+    (m) => !unavailable.has(m) && !((coolingUntil.get(m) ?? 0) > now),
   );
   let discovered = false;
   let index = 0;
@@ -90,11 +97,12 @@ export async function generateJson<T>(opts: {
     if (index + 1 >= chain.length && !discovered) {
       discovered = true;
       const { models: found, failed } = await discoverFlashModels(key);
-      chain.push(...found.filter((m) => !chain.includes(m) && !unavailable.has(m)));
+      const t = Date.now();
+      chain.push(...found.filter((m) => !chain.includes(m) && !unavailable.has(m) && !((coolingUntil.get(m) ?? 0) > t)));
       trail.push(
         failed
           ? `[model list unavailable: ${failed}]`
-          : `[key can use ${found.length} Flash model${found.length === 1 ? "" : "s"}: ${found.join(" / ") || "none"}]`,
+          : `[key can use ${found.length} Flash model${found.length === 1 ? "" : "s"}]`,
       );
     }
     if (index + 1 < chain.length) {
@@ -105,12 +113,19 @@ export async function generateJson<T>(opts: {
   };
 
   if (!chain.length) await nextModel();
-  if (!chain.length) throw new Error("No Gemini Flash model is available to this API key.");
+  if (!chain.length) {
+    throw new Error("Every Gemini Flash model this key can use is out of quota or unavailable right now. Try again later.");
+  }
 
+  const deadline = Date.now() + CALL_BUDGET_MS;
   let lastError = "";
+  let quotaError = ""; // a 429 explains more than a trailing 503, so it wins in the final message
   let wait = 0;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (wait) await new Promise((r) => setTimeout(r, wait));
+    if (wait) {
+      if (Date.now() + wait > deadline) break;
+      await new Promise((r) => setTimeout(r, wait));
+    }
     const model = chain[index];
     const res = await fetch(`${API}/models/${model}:generateContent`, {
       method: "POST",
@@ -125,7 +140,21 @@ export async function generateJson<T>(opts: {
       if (workingModel === model) workingModel = null;
       wait = 0;
       if (await nextModel()) continue;
-      throw failWith(lastError);
+      break;
+    }
+    if (res.status === 429) {
+      // Quotas are per model: set this one aside and try another straight away.
+      const text = await res.text();
+      note(`${model} ${statusLabel(429, text)}`);
+      quotaError = lastError = describeGeminiError(429, text, model);
+      const q = parseQuota(text);
+      coolingUntil.set(model, Date.now() + (q.scope === "day" ? 60 * 60_000 : Math.max(q.retryDelaySec ?? 60, 30) * 1000));
+      if (workingModel === model) workingModel = null;
+      if (await nextModel()) {
+        wait = 500;
+        continue;
+      }
+      break;
     }
     if (isRetryable(res.status)) {
       note(`${model} ${res.status}`);
@@ -158,5 +187,5 @@ export async function generateJson<T>(opts: {
       wait = 1000;
     }
   }
-  throw failWith(lastError || "Gemini request failed");
+  throw failWith(quotaError || lastError || "Gemini request failed");
 }

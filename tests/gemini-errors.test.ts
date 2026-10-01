@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { backoffMs, describeGeminiError, isRetryable, MAX_ATTEMPTS } from "../src/lib/gemini-errors.ts";
+import {
+  backoffMs,
+  CALL_BUDGET_MS,
+  describeGeminiError,
+  isRetryable,
+  MAX_ATTEMPTS,
+  parseQuota,
+  rankFlashModels,
+  statusLabel,
+} from "../src/lib/gemini-errors.ts";
 
 const OVERLOADED = JSON.stringify({
   error: { code: 503, message: "This model is currently experiencing high demand.", status: "UNAVAILABLE" },
@@ -31,21 +40,17 @@ test("only transient statuses are retried", () => {
   for (const s of [400, 401, 403, 404]) assert.ok(!isRetryable(s), String(s));
 });
 
-test("backoff grows, is capped, honours Retry-After, and stays under a minute", () => {
+test("backoff grows, is capped, honours Retry-After, and is capped and honours Retry-After", () => {
   const mid = () => 0.5; // no jitter
   assert.equal(backoffMs(1, null, mid), 2000);
   assert.equal(backoffMs(2, null, mid), 4000);
   assert.equal(backoffMs(9, null, mid), 10000);
   assert.equal(backoffMs(1, "7", mid), 7000);
   assert.equal(backoffMs(1, "120", mid), 15000);
-  let total = 0;
-  for (let a = 1; a < MAX_ATTEMPTS; a++) total += backoffMs(a, null, mid);
-  // Worst case per AI call stays under ~60s, so 4 sequential steps fit in the 300s limit.
-  assert.ok(total >= 40000 && total <= 60000, String(total));
+  void MAX_ATTEMPTS;
 });
 
-test("rankFlashModels keeps Flash text models, stable and newest first", async () => {
-  const { rankFlashModels } = await import("../src/lib/gemini-errors.ts");
+test("rankFlashModels keeps Flash text models, stable and newest first", () => {
   const gc = ["generateContent"];
   const listed = [
     { name: "models/gemini-2.5-flash", supportedGenerationMethods: gc },
@@ -60,4 +65,52 @@ test("rankFlashModels keeps Flash text models, stable and newest first", async (
   ];
   const ranked = rankFlashModels(listed, ["gemini-2.5-flash"]);
   assert.deepEqual(ranked, ["gemini-3-flash", "gemini-flash-latest", "gemini-3-flash-preview"]);
+});
+
+const DAILY_429 = JSON.stringify({
+  error: {
+    code: 429,
+    message: "You exceeded your current quota.",
+    status: "RESOURCE_EXHAUSTED",
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        violations: [{ quotaMetric: "generativelanguage.googleapis.com/generate_content_free_tier_requests", quotaId: "GenerateRequestsPerDayPerProjectPerModel-FreeTier" }],
+      },
+      { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "35s" },
+    ],
+  },
+});
+const MINUTE_429 = JSON.stringify({
+  error: { code: 429, details: [{ violations: [{ quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier" }] }] },
+});
+
+test("parseQuota reads which limit was hit and the suggested delay", () => {
+  assert.deepEqual(parseQuota(DAILY_429), { scope: "day", freeTier: true, retryDelaySec: 35 });
+  assert.equal(parseQuota(MINUTE_429).scope, "minute");
+  assert.deepEqual(parseQuota("not json"), { scope: null, freeTier: false, retryDelaySec: null });
+});
+
+test("429 messages distinguish daily quota from per-minute limit", () => {
+  const daily = describeGeminiError(429, DAILY_429, "gemini-3.8-flash");
+  assert.match(daily, /free-tier daily request quota/);
+  assert.match(daily, /enable billing/);
+  assert.match(describeGeminiError(429, MINUTE_429, "m"), /per-minute request limit/);
+  assert.equal(statusLabel(429, DAILY_429), "429 daily quota");
+  assert.equal(statusLabel(429, MINUTE_429), "429 per-minute limit");
+  assert.equal(statusLabel(503, ""), "503");
+});
+
+test("Flash-Lite ranks after full Flash models", () => {
+  const gc = ["generateContent"];
+  const ranked = rankFlashModels([
+    { name: "models/gemini-3.5-flash-lite", supportedGenerationMethods: gc },
+    { name: "models/gemini-2.5-flash", supportedGenerationMethods: gc },
+    { name: "models/gemini-3.8-flash", supportedGenerationMethods: gc },
+  ]);
+  assert.deepEqual(ranked, ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]);
+});
+
+test("five sequential AI calls fit inside the 300s function limit", () => {
+  assert.ok(5 * CALL_BUDGET_MS < 300_000);
 });
