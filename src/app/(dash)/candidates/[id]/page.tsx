@@ -134,7 +134,10 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
         </Card>
       )}
       {c.status === "error" && (
-        <Card className="border-bad/40 bg-bad-soft px-5 py-4 text-sm text-bad">Processing failed: {c.error}. Use Re-score to try again.</Card>
+        <Card className="border-bad/40 bg-bad-soft px-5 py-4 text-sm text-bad">
+          Processing failed: {c.error?.replace(/\.+\s*$/, "")}.
+          {!/re-score/i.test(c.error ?? "") && " Use Re-score to try again."}
+        </Card>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_380px]">
