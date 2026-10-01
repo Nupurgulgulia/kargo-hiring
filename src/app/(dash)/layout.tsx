@@ -1,18 +1,8 @@
 import Link from "next/link";
-import { autoSendRejectionsEnabled } from "@/lib/auto-send";
-import { testRecipient } from "@/lib/email";
 
 export default function DashLayout({ children }: LayoutProps<"/">) {
-  const testTo = testRecipient();
-  const autoReject = autoSendRejectionsEnabled();
   return (
     <>
-      {(testTo || autoReject) && (
-        <div className="space-y-0.5 bg-warn-soft px-4 py-1.5 text-center text-xs font-medium text-warn">
-          {testTo && <p>Email test mode: every send goes to {testTo}, not to candidates.</p>}
-          {autoReject && <p>Rejections are emailed automatically when scoring finishes. Invites wait for your click.</p>}
-        </div>
-      )}
       <header className="sticky top-0 z-20 bg-header text-header-ink shadow-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-4 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">

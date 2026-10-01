@@ -29,7 +29,7 @@ On Vercel, set the same variables under Project → Settings → Environment Var
 
 > **Automatic rejections:** with `AUTO_SEND_REJECTIONS=true`, a candidate who scores below the line for the role they applied for gets their rejection emailed as soon as scoring finishes, unless Arjun has already marked them (interview / hold / decline). Rejections cannot be unsent, and the rubric is a screen, not a verdict, so turn this off if you want to review them first. Invites are never automatic. Skips and failures are recorded in the activity log, and a failed send stays on the dashboard to retry.
 
-> **Email test mode:** while `EMAIL_TEST_RECIPIENT` is set, every send goes to that address instead of the candidate. The subject is unchanged, and the candidate it was meant for is recorded in the activity log. The draft stays unsent, and a yellow banner shows on the dashboard. Delete the variable (in Vercel too) to send to real candidates.
+> **Email test mode:** while `EMAIL_TEST_RECIPIENT` is set, every send goes to that address instead of the candidate. The subject is unchanged, and the candidate it was meant for is recorded in the activity log. The draft stays unsent,. Delete the variable (in Vercel too) to send to real candidates.
 
 > **Resend:** until you verify a sending domain, `onboarding@resend.dev` only delivers to the email on your Resend account. Verify `kargo.in` (or similar) and set `EMAIL_FROM` before emailing real candidates.
 
