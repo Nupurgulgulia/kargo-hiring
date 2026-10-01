@@ -1,36 +1,48 @@
 import { connection } from "next/server";
 import { Shortlist } from "@/components/shortlist";
 import { Uploader } from "@/components/uploader";
-import { listCandidates } from "@/lib/queries";
+import { autoSendRejectionsEnabled } from "@/lib/auto-send";
 import { getRubrics } from "@/lib/db";
 import { testRecipient } from "@/lib/email";
+import { listCandidates } from "@/lib/queries";
+import { emailStats } from "@/lib/stats";
 
 export default async function DashboardPage() {
   await connection();
   const [rows, rubrics] = await Promise.all([listCandidates(), getRubrics()]);
+  const testTo = testRecipient();
+  const autoReject = autoSendRejectionsEnabled();
 
   const ready = rows.filter((r) => r.status === "ready");
-  const stats = [
+  const mail = emailStats(rows);
+  const stats: { label: string; value: number; hint?: string }[] = [
     { label: "Candidates", value: rows.length },
     { label: "Recommended to interview", value: ready.filter((r) => r.recommendation === "invite").length },
-    { label: "Drafts awaiting your send", value: rows.filter((r) => r.email_status === "draft" || r.email_status === "failed").length },
-    { label: "Emails sent", value: rows.filter((r) => r.email_status === "sent").length },
+    { label: "Awaiting your send", value: mail.awaitingYourSend, hint: "drafts not yet sent to a candidate" },
+    { label: "Sent to candidates", value: mail.sentToCandidates },
   ];
+  if (testTo || mail.testSends > 0) {
+    stats.push({ label: "Test emails sent", value: mail.testSends, hint: testTo ? `to ${testTo}` : "to the test address" });
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Shortlist</h1>
         <p className="mt-1 text-sm text-muted">
-          Every CV is scored on both the PM and SPM rubrics. Drafts are never sent until you click Send.
+          Every CV is scored on both the PM and SPM rubrics.{" "}
+          {autoReject
+            ? "Rejections are emailed automatically once scoring finishes; invites are only sent when you click Send."
+            : "Drafts are never sent until you click Send."}
         </p>
       </div>
 
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(10.5rem, 1fr))" }}>
         {stats.map((s) => (
           <div key={s.label} className="rounded-xl border border-line bg-surface px-4 py-3">
             <dt className="text-xs text-muted">{s.label}</dt>
             <dd className="tabular mt-1 text-2xl font-semibold">{s.value}</dd>
+            {s.hint && <p className="mt-0.5 truncate text-xs text-muted">{s.hint}</p>}
           </div>
         ))}
       </dl>
@@ -40,7 +52,7 @@ export default async function DashboardPage() {
       <Shortlist
         rows={rows}
         thresholds={{ PM: rubrics.PM.threshold, SPM: rubrics.SPM.threshold }}
-        testRecipient={testRecipient()}
+        testRecipient={testTo}
       />
     </div>
   );

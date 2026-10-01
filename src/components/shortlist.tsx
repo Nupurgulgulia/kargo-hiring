@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { ListRow } from "@/lib/queries";
+import { isAwaitingYourSend } from "@/lib/stats";
 import type { Role } from "@/lib/types";
 import { SendButton } from "./send-button";
 import { Badge, Card, CardHeader, ScoreBar } from "./ui";
@@ -42,7 +43,7 @@ export function Shortlist({
   const visible = useMemo(() => {
     const f = rows.filter((r) => {
       if (filter === "PM" || filter === "SPM") return r.applied_role === filter;
-      if (filter === "todo") return r.status === "ready" && r.email_status !== "sent";
+      if (filter === "todo") return isAwaitingYourSend(r);
       return true;
     });
     const key = (r: ListRow) =>
@@ -147,6 +148,10 @@ export function Shortlist({
                       <Badge tone="good">{r.email_kind === "invite" ? "Invite sent" : "Rejection sent"}</Badge>
                     ) : r.email_status === "failed" ? (
                       <Badge tone="bad">Send failed</Badge>
+                    ) : r.email_status && r.test_sends > 0 ? (
+                      <Badge tone="accent">
+                        {r.email_kind === "invite" ? "Invite" : "Rejection"} test-sent{r.test_sends > 1 ? ` ×${r.test_sends}` : ""}
+                      </Badge>
                     ) : r.email_status ? (
                       <Badge tone="warn">{r.email_kind === "invite" ? "Invite drafted" : "Rejection drafted"}</Badge>
                     ) : (

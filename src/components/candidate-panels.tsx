@@ -36,11 +36,15 @@ export function EmailComposer({
   email,
   recommendation,
   testRecipient = null,
+  testSends = 0,
+  autoReject = false,
 }: {
   candidate: Pick<Candidate, "id" | "full_name" | "email">;
   email: EmailRow;
   recommendation: EmailKind | null;
   testRecipient?: string | null;
+  testSends?: number;
+  autoReject?: boolean;
 }) {
   const router = useRouter();
   const [subject, setSubject] = useState(email.subject);
@@ -90,7 +94,11 @@ export function EmailComposer({
         sub={
           email.status === "sent"
             ? `Sent to ${email.sent_to} on ${new Date(email.sent_at!).toLocaleString("en-IN")}`
-            : "Draft only. Nothing is sent until you confirm."
+            : testSends > 0
+              ? `Test-sent ${testSends}× to ${testRecipient ?? "the test address"}. Not sent to the candidate yet.`
+              : autoReject && email.kind === "reject"
+                ? "Rejections are emailed automatically after scoring. This one hasn't been sent; see the activity log."
+                : "Draft only. Nothing is sent until you confirm."
         }
         aside={
           <div className="flex items-center gap-1.5">

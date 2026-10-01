@@ -12,6 +12,7 @@ import { Badge, Card, CardHeader, ScoreBar } from "@/components/ui";
 import { getCandidateDetail } from "@/lib/queries";
 import { tierFor } from "@/lib/scoring";
 import { getRubrics } from "@/lib/db";
+import { autoSendRejectionsEnabled } from "@/lib/auto-send";
 import { testRecipient } from "@/lib/email";
 import type { EventRow, Role, ScoreRow } from "@/lib/types";
 import { ROLE_TITLES } from "@/lib/types";
@@ -30,9 +31,20 @@ const EVENT_LABELS: Record<string, string> = {
   email_edited: "Draft edited",
   email_sent: "Email sent",
   email_test_sent: "Test email sent",
+  email_auto_skipped: "Automatic rejection skipped",
+  email_auto_failed: "Automatic rejection failed",
   email_send_failed: "Send failed",
   updated: "Record updated",
 };
+
+// Automatic sends are the system's own action, so say so in the log.
+function labelFor(e: EventRow): string {
+  const auto = e.detail?.auto === true;
+  if (auto && e.action === "email_sent") return "Rejection emailed automatically";
+  if (auto && e.action === "email_test_sent") return "Rejection test-emailed automatically";
+  if (auto && e.action === "email_send_failed") return "Automatic send failed";
+  return EVENT_LABELS[e.action] ?? e.action;
+}
 
 function describe(e: EventRow): string | null {
   const d = e.detail ?? {};
@@ -40,7 +52,8 @@ function describe(e: EventRow): string | null {
   if (e.action === "email_drafted" || e.action === "redraft_requested") return String(d.kind ?? "");
   if (e.action === "email_sent") return `${d.kind} to ${d.to}`;
   if (e.action === "email_test_sent") return `${d.kind} to ${d.to} (instead of ${d.intended ?? "no email on file"})`;
-  if (e.action === "pipeline_failed" || e.action === "email_send_failed") return String(d.error ?? "");
+  if (e.action === "pipeline_failed" || e.action === "email_send_failed" || e.action === "email_auto_failed") return String(d.error ?? "");
+  if (e.action === "email_auto_skipped") return String(d.reason ?? "");
   if (e.action === "updated") {
     const parts = [d.decision ? `decision: ${d.decision}` : null, d.notes ? `notes: “${String(d.notes).slice(0, 140)}”` : null];
     return parts.filter(Boolean).join(" · ") || (Array.isArray(d.fields) ? d.fields.join(", ") : null);
@@ -52,7 +65,7 @@ function Dots({ score }: { score: number }) {
   return (
     <span className="inline-flex gap-0.5" aria-label={`${score} out of 5`}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className={`h-2 w-2 rounded-full ${n <= score ? (score >= 4 ? "bg-good" : score === 3 ? "bg-warn" : "bg-muted") : "bg-surface-2 ring-1 ring-line"}`} />
+        <span key={n} className={`h-2 w-2 rounded-full ${n <= score ? (score >= 4 ? "bg-good-solid" : score === 3 ? "bg-warn" : "bg-muted") : "bg-surface-2 ring-1 ring-line"}`} />
       ))}
     </span>
   );
@@ -226,7 +239,7 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
 
         <aside className="min-w-0 space-y-5">
           {/* Remount on every server-side draft change (save, redraft, send) to reset local edits. */}
-          {email && <EmailComposer key={`${email.updated_at}-${email.status}`} candidate={c} email={email} recommendation={c.recommendation} testRecipient={testRecipient()} />}
+          {email && <EmailComposer key={`${email.updated_at}-${email.status}`} candidate={c} email={email} recommendation={c.recommendation} testRecipient={testRecipient()} testSends={events.filter((e) => e.action === "email_test_sent").length} autoReject={autoSendRejectionsEnabled()} />}
           <DecisionNotes candidate={c} />
           <ContactEditor candidate={c} />
           <Card>
@@ -239,7 +252,7 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
                     <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${e.actor === "arjun" ? "bg-accent" : e.actor === "ai" ? "bg-warn" : "bg-muted"}`} />
                     <div className="min-w-0">
                       <p>
-                        {EVENT_LABELS[e.action] ?? e.action}
+                        {labelFor(e)}
                         <span className="ml-1.5 text-xs text-muted">{e.actor === "arjun" ? "you" : e.actor}</span>
                       </p>
                       {extra && <p className="break-words text-xs text-muted">{extra}</p>}

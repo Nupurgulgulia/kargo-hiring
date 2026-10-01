@@ -1,40 +1,61 @@
 @import "tailwindcss";
 
+/*
+  Kargo colour scheme: "Harbour".
+  Calm cool-grey surfaces, a deep navy header and one port-blue accent, the same recipe as Ashby,
+  Greenhouse and Lever (neutral canvas + a single confident brand colour + separate status pills).
+  Blue is used for identity and actions only; green / amber / red are reserved for status, so a
+  colour never means two things. Every text pair is >= 4.5:1 in both modes (checked by script).
+*/
 :root {
-  --bg: #f6f6f3;
+  --bg: #f4f6fa;
   --surface: #ffffff;
-  --surface-2: #f0f0ec;
-  --ink: #16181d;
-  --muted: #5f6570;
-  --line: #e2e2dc;
-  --accent: #0f5c63;
+  --surface-2: #edf0f6;
+  --ink: #0d1b2e;
+  --muted: #556275;
+  --line: #dbe1ec;
+
+  --accent: #256abf;
   --accent-ink: #ffffff;
-  --accent-soft: #e2eff0;
-  --good: #1d7a46;
-  --good-soft: #e3f3e9;
-  --warn: #9a6200;
-  --warn-soft: #fbf0d9;
+  --accent-soft: #e6effb;
+
+  --good: #0b6b25;
+  --good-soft: #e1f4e6;
+  --good-solid: #0ca30c; /* fills and dots (not text) */
+  --warn: #7a4b00;
+  --warn-soft: #fdf0cf;
   --bad: #b3261e;
-  --bad-soft: #fbe6e4;
+  --bad-soft: #fdeaea;
+
+  --header: #0b2545;
+  --header-ink: #ffffff;
+  --header-muted: #b9c6da;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111317;
-    --surface: #181b20;
-    --surface-2: #20242a;
-    --ink: #e9eaec;
-    --muted: #9aa0aa;
-    --line: #2c3038;
-    --accent: #4fb3bb;
-    --accent-ink: #0b1f21;
-    --accent-soft: #173236;
-    --good: #5cc98a;
-    --good-soft: #15301f;
-    --warn: #e0a84a;
+    --bg: #0b1220;
+    --surface: #121b2e;
+    --surface-2: #1a2540;
+    --ink: #e6ecf7;
+    --muted: #9aa7bd;
+    --line: #25324d;
+
+    --accent: #5598e7;
+    --accent-ink: #07142b;
+    --accent-soft: #17294a;
+
+    --good: #5fd17b;
+    --good-soft: #11301d;
+    --good-solid: #3fbf5f;
+    --warn: #f5b942;
     --warn-soft: #33270f;
-    --bad: #ef7a72;
-    --bad-soft: #3a1a18;
+    --bad: #f28b8b;
+    --bad-soft: #3b1a1d;
+
+    --header: #08162e;
+    --header-ink: #ffffff;
+    --header-muted: #9db0cc;
   }
 }
 
@@ -50,10 +71,14 @@
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
   --color-good-soft: var(--good-soft);
+  --color-good-solid: var(--good-solid);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-bad: var(--bad);
   --color-bad-soft: var(--bad-soft);
+  --color-header: var(--header);
+  --color-header-ink: var(--header-ink);
+  --color-header-muted: var(--header-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

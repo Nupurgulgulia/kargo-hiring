@@ -36,7 +36,7 @@ export function Badge({ tone = "neutral", children }: { tone?: Tone; children: R
 // Score out of 100 with a tick at the role's strong-hire threshold.
 export function ScoreBar({ score, threshold, compact = false }: { score: number | null; threshold: number; compact?: boolean }) {
   if (score == null) return <span className="text-xs text-muted">—</span>;
-  const tone = score >= threshold ? "bg-good" : "bg-muted/60";
+  const tone = score >= threshold ? "bg-good-solid" : "bg-muted/60";
   return (
     <div className={`flex items-center gap-2 ${compact ? "min-w-24" : "min-w-36"}`}>
       <span className="tabular w-9 text-right text-sm font-semibold">{Math.round(score)}</span>
