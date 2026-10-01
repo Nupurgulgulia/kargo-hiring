@@ -72,6 +72,12 @@ export function redact(text: string, contact: Contact): string {
     const d = digitCount(m);
     return d >= 10 && d <= 15 ? "[PHONE]" : m;
   });
+  // Overlapping text layers can glue repeated copies of the number together (16+ digits), which the
+  // generic pass above leaves alone. Remove every copy of the detected number, whatever sits between digits.
+  if (contact.phone) {
+    const last10 = contact.phone.replace(/\D/g, "").slice(-10);
+    if (last10.length === 10) out = out.replace(new RegExp(last10.split("").join("[\\s().-]*"), "g"), "[PHONE]");
+  }
   if (contact.full_name) {
     out = out.replace(new RegExp(escapeRe(contact.full_name), "gi"), "[CANDIDATE]");
     for (const token of nameTokens(contact.full_name)) {

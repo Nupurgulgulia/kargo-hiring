@@ -25,7 +25,8 @@ export async function extractCvText(filename: string, buffer: Buffer): Promise<s
     throw new Error(`Unsupported file type "${ext}". Upload a PDF, DOCX or TXT file.`);
   }
 
-  text = text.replace(BULLET_PUA, "\u2022").replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  // Postgres text columns cannot hold NUL (0x00); some PDFs extract with them
+  text = text.replace(/\u0000/g, "").replace(BULLET_PUA, "\u2022").replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (text.length < 200) {
     throw new Error(
       "Could not read enough text from this file (it may be a scanned image). Upload a text-based PDF or DOCX.",
