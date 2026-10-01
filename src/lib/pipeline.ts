@@ -1,7 +1,7 @@
 import "server-only";
 import { draftEmail, extractProfile, scoreAgainstRubric, writeBrief } from "./ai";
 import { getRubrics, json, logEvent, one, query } from "./db";
-import { GEMINI_MODEL } from "./gemini";
+import { activeModel } from "./gemini";
 import { assertNoPII } from "./pii";
 import { recommendationFor } from "./scoring";
 import { errorMessage } from "./secrets";
@@ -41,7 +41,7 @@ export async function processCandidate(id: string) {
     const extraction = await extractProfile(c.redacted_text);
     assertNoPII(JSON.stringify(extraction), contact);
     await query("update kargo_candidates set extracted = $2::jsonb where id = $1", [id, json(extraction)]);
-    await logEvent(id, "ai", "extracted", { model: GEMINI_MODEL, roles: extraction.roles.length });
+    await logEvent(id, "ai", "extracted", { model: activeModel(), roles: extraction.roles.length });
 
     // AI step 2 — score against BOTH rubrics, regardless of the role applied for
     const scored = await Promise.all(
@@ -57,7 +57,7 @@ export async function processCandidate(id: string) {
          on conflict (candidate_id, role) do update set
            total = excluded.total, criteria = excluded.criteria, summary = excluded.summary,
            model = excluded.model, created_at = now()`,
-        [id, s.role, s.total, json(s.criteria), s.summary, GEMINI_MODEL],
+        [id, s.role, s.total, json(s.criteria), s.summary, activeModel()],
       );
     }
 
@@ -87,9 +87,9 @@ export async function processCandidate(id: string) {
     await query(
       `insert into kargo_briefs (candidate_id, content, model) values ($1, $2::jsonb, $3)
        on conflict (candidate_id) do update set content = excluded.content, model = excluded.model, created_at = now()`,
-      [id, json(brief), GEMINI_MODEL],
+      [id, json(brief), activeModel()],
     );
-    await logEvent(id, "ai", "brief_written", { model: GEMINI_MODEL });
+    await logEvent(id, "ai", "brief_written", { model: activeModel() });
 
     // AI step 4 — outreach draft (never sent here)
     await saveDraft(id, recommendation, c.applied_role, extraction, brief);
@@ -117,9 +117,9 @@ async function saveDraft(
      on conflict (candidate_id) do update set
        kind = excluded.kind, subject = excluded.subject, body = excluded.body,
        status = 'draft', error = null, model = excluded.model, updated_at = now()`,
-    [id, kind, draft.subject, draft.body, GEMINI_MODEL],
+    [id, kind, draft.subject, draft.body, activeModel()],
   );
-  await logEvent(id, "ai", "email_drafted", { kind, model: GEMINI_MODEL });
+  await logEvent(id, "ai", "email_drafted", { kind, model: activeModel() });
 }
 
 // Used when Arjun overrides the recommendation, e.g. "draft an invite instead".

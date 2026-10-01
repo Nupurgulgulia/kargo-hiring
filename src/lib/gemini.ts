@@ -1,17 +1,45 @@
 import "server-only";
-import { backoffMs, describeGeminiError, isRetryable, MAX_ATTEMPTS } from "./gemini-errors";
+import {
+  backoffMs,
+  describeGeminiError,
+  isRetryable,
+  MAX_ATTEMPTS,
+  OVERLOADS_BEFORE_SWITCH,
+  rankFlashModels,
+} from "./gemini-errors";
 
 // Thin client for the Gemini REST API with JSON-schema constrained output.
 // Every AI step (extraction, scoring, brief, email) goes through generateJson().
-// Overload and rate-limit errors are retried with backoff for roughly a minute.
+//
+// Model chain: GEMINI_MODEL, then GEMINI_FALLBACK_MODEL (comma-separated), then any other Flash
+// models this key can use (discovered via models.list). A model is skipped on 404, and left after
+// repeated overloads. The model that last succeeded is tried first on the next call.
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
-const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL?.trim() || null;
+export const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
+const CONFIGURED_FALLBACKS = (process.env.GEMINI_FALLBACK_MODEL ?? "")
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+
+const API = "https://generativelanguage.googleapis.com/v1beta";
+
+let workingModel: string | null = null;
+const unavailable = new Set<string>();
+let discovery: Promise<string[]> | null = null;
+
+// The model that most recently produced a result, for the record stored with each AI output.
+export function activeModel(): string {
+  return workingModel ?? GEMINI_MODEL;
+}
 
 type Schema = Record<string, unknown>;
 
-const ENDPOINT = (model: string) =>
-  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+function discoverFlashModels(key: string): Promise<string[]> {
+  discovery ??= fetch(`${API}/models?pageSize=200`, { headers: { "x-goog-api-key": key } })
+    .then(async (res) => (res.ok ? rankFlashModels((await res.json())?.models ?? []) : []))
+    .catch(() => []);
+  return discovery;
+}
 
 export async function generateJson<T>(opts: {
   system: string;
@@ -37,26 +65,60 @@ export async function generateJson<T>(opts: {
     },
   });
 
+  const chain = [...new Set([workingModel, GEMINI_MODEL, ...CONFIGURED_FALLBACKS].filter((m): m is string => !!m))].filter(
+    (m) => !unavailable.has(m),
+  );
+  let discovered = false;
+  let index = 0;
+  let overloads = 0;
+
+  // Move to the next model; when the known ones run out, append what the key can actually use.
+  const nextModel = async (): Promise<boolean> => {
+    overloads = 0;
+    if (index + 1 >= chain.length && !discovered) {
+      discovered = true;
+      for (const m of await discoverFlashModels(key)) if (!chain.includes(m) && !unavailable.has(m)) chain.push(m);
+    }
+    if (index + 1 < chain.length) {
+      index++;
+      return true;
+    }
+    return false;
+  };
+
+  if (!chain.length) await nextModel();
+  if (!chain.length) throw new Error("No Gemini Flash model is available to this API key.");
+
   let lastError = "";
   let wait = 0;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (wait) await new Promise((r) => setTimeout(r, wait));
-    // After repeated overloads, switch to GEMINI_FALLBACK_MODEL if one is configured.
-    const model = FALLBACK_MODEL && attempt >= 3 ? FALLBACK_MODEL : GEMINI_MODEL;
-    const res = await fetch(ENDPOINT(model), {
+    const model = chain[index];
+    const res = await fetch(`${API}/models/${model}:generateContent`, {
       method: "POST",
       headers: { "content-type": "application/json", "x-goog-api-key": key },
       body,
     });
+
+    if (res.status === 404) {
+      lastError = describeGeminiError(404, await res.text(), model);
+      unavailable.add(model);
+      if (workingModel === model) workingModel = null;
+      wait = 0;
+      if (await nextModel()) continue;
+      throw new Error(lastError);
+    }
     if (isRetryable(res.status)) {
       lastError = describeGeminiError(res.status, await res.text(), model);
       wait = backoffMs(attempt + 1, res.headers.get("retry-after"));
+      // A different model needs no long cool-down.
+      if (++overloads >= OVERLOADS_BEFORE_SWITCH && (await nextModel())) wait = 1000;
       continue;
     }
     if (!res.ok) {
       throw new Error(describeGeminiError(res.status, await res.text(), model));
     }
-    wait = 0;
+
     const json = await res.json();
     const text: string | undefined = json?.candidates?.[0]?.content?.parts
       ?.map((p: { text?: string }) => p.text ?? "")
@@ -67,7 +129,9 @@ export async function generateJson<T>(opts: {
       continue;
     }
     try {
-      return JSON.parse(text) as T;
+      const parsed = JSON.parse(text) as T;
+      workingModel = model;
+      return parsed;
     } catch {
       lastError = "Gemini returned invalid JSON";
       wait = 1000;

@@ -31,14 +31,33 @@ test("only transient statuses are retried", () => {
   for (const s of [400, 401, 403, 404]) assert.ok(!isRetryable(s), String(s));
 });
 
-test("backoff grows, is capped, honours Retry-After, and totals about a minute", () => {
+test("backoff grows, is capped, honours Retry-After, and stays under a minute", () => {
   const mid = () => 0.5; // no jitter
   assert.equal(backoffMs(1, null, mid), 2000);
   assert.equal(backoffMs(2, null, mid), 4000);
-  assert.equal(backoffMs(9, null, mid), 20000);
+  assert.equal(backoffMs(9, null, mid), 10000);
   assert.equal(backoffMs(1, "7", mid), 7000);
-  assert.equal(backoffMs(1, "120", mid), 30000);
+  assert.equal(backoffMs(1, "120", mid), 15000);
   let total = 0;
   for (let a = 1; a < MAX_ATTEMPTS; a++) total += backoffMs(a, null, mid);
-  assert.ok(total >= 40000 && total <= 70000, String(total));
+  // Worst case per AI call stays under ~60s, so 4 sequential steps fit in the 300s limit.
+  assert.ok(total >= 40000 && total <= 60000, String(total));
+});
+
+test("rankFlashModels keeps Flash text models, stable and newest first", async () => {
+  const { rankFlashModels } = await import("../src/lib/gemini-errors.ts");
+  const gc = ["generateContent"];
+  const listed = [
+    { name: "models/gemini-2.5-flash", supportedGenerationMethods: gc },
+    { name: "models/gemini-3-flash-preview", supportedGenerationMethods: gc },
+    { name: "models/gemini-3-flash", supportedGenerationMethods: gc },
+    { name: "models/gemini-flash-latest", supportedGenerationMethods: gc },
+    { name: "models/gemini-3-flash-image", supportedGenerationMethods: gc },
+    { name: "models/gemini-3-flash-tts", supportedGenerationMethods: gc },
+    { name: "models/gemini-3-pro", supportedGenerationMethods: gc },
+    { name: "models/text-embedding-004", supportedGenerationMethods: ["embedContent"] },
+    { name: "models/gemini-3-flash", supportedGenerationMethods: gc }, // duplicate
+  ];
+  const ranked = rankFlashModels(listed, ["gemini-2.5-flash"]);
+  assert.deepEqual(ranked, ["gemini-3-flash", "gemini-flash-latest", "gemini-3-flash-preview"]);
 });
