@@ -55,7 +55,7 @@ const row = (o: Partial<EmailStatRow>): EmailStatRow => ({
   ...o,
 });
 
-test("counters reflect what was actually sent, including test sends", () => {
+test("one Emails sent number: real sends plus test sends", () => {
   const rows = [
     row({ email_kind: "invite", test_sends: 2 }), // invite, test-sent twice, still waiting for Arjun
     row({ email_kind: "reject", test_sends: 3, auto_handled: true }), // rejection already handled automatically
@@ -63,7 +63,7 @@ test("counters reflect what was actually sent, including test sends", () => {
     row({ email_kind: "invite", email_status: "failed" }), // failed: needs Arjun
     row({ status: "processing", email_status: null, email_kind: null }), // still scoring
   ];
-  assert.deepEqual(emailStats(rows), { sentToCandidates: 1, testSends: 5, awaitingYourSend: 2 });
+  assert.deepEqual(emailStats(rows), { emailsSent: 6, sentToCandidates: 1, testSends: 5, awaitingYourSend: 2 });
 });
 
 test("a rejection nobody has sent yet still counts as awaiting", () => {

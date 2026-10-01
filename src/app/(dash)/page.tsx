@@ -19,11 +19,8 @@ export default async function DashboardPage() {
     { label: "Candidates", value: rows.length },
     { label: "Recommended to interview", value: ready.filter((r) => r.recommendation === "invite").length },
     { label: "Awaiting your send", value: mail.awaitingYourSend, hint: "drafts not yet sent to a candidate" },
-    { label: "Sent to candidates", value: mail.sentToCandidates },
+    { label: "Emails sent", value: mail.emailsSent },
   ];
-  if (testTo || mail.testSends > 0) {
-    stats.push({ label: "Test emails sent", value: mail.testSends, hint: testTo ? `to ${testTo}` : "to the test address" });
-  }
 
   return (
     <div className="space-y-6">

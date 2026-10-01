@@ -27,5 +27,7 @@ export function emailStats(rows: EmailStatRow[]) {
   // Emails delivered by Resend to the test address while test mode is on.
   const testSends = rows.reduce((sum, r) => sum + (r.test_sends || 0), 0);
   const awaitingYourSend = rows.filter(isAwaitingYourSend).length;
-  return { sentToCandidates, testSends, awaitingYourSend };
+  // Every email Resend delivered, to a candidate or to the test address: the one "Emails sent" number.
+  const emailsSent = sentToCandidates + testSends;
+  return { emailsSent, sentToCandidates, testSends, awaitingYourSend };
 }
