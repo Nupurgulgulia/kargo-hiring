@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/core.test.ts tests/secrets.test.ts tests/gemini-errors.test.ts tests/stats.test.ts tests/founder.test.ts tests/db-retry.test.ts tests/send-guard.test.ts tests/brief.test.ts",
-    "db:setup": "node --env-file=.env.local scripts/db-setup.mjs"
+    "test": "node --test tests/core.test.ts tests/secrets.test.ts tests/gemini-errors.test.ts tests/stats.test.ts tests/founder.test.ts tests/db-retry.test.ts tests/send-guard.test.ts tests/brief.test.ts tests/cv-quality.test.ts",
+    "db:setup": "node --env-file=.env.local scripts/db-setup.mjs",
+    "batch": "node --conditions=react-server scripts/batch-run.mjs"
   },
   "dependencies": {
     "@neon/config": "^1.8.2",

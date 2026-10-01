@@ -1,5 +1,7 @@
 import "server-only";
 
+import { BULLET_PUA } from "./cv-quality.ts";
+
 export const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".txt", ".md"];
 
 // Turns an uploaded CV file into plain text. Runs entirely on our server — the raw file
@@ -23,7 +25,7 @@ export async function extractCvText(filename: string, buffer: Buffer): Promise<s
     throw new Error(`Unsupported file type "${ext}". Upload a PDF, DOCX or TXT file.`);
   }
 
-  text = text.replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  text = text.replace(BULLET_PUA, "\u2022").replace(/\r\n/g, "\n").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (text.length < 200) {
     throw new Error(
       "Could not read enough text from this file (it may be a scanned image). Upload a text-based PDF or DOCX.",
