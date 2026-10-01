@@ -2,8 +2,10 @@
 // and how to turn Google's error JSON into a message Arjun can act on.
 
 // Time budget for one AI call across all retries and model switches. Five sequential steps
-// (extraction, PM score, SPM score, brief, email) must fit inside the 300s function limit.
-export const CALL_BUDGET_MS = 55_000;
+// (extraction, PM score, SPM score, brief, email) must fit inside the 300s function limit, with room
+// left for the optional founder's read (two attempts of FOUNDER_BUDGET_MS).
+export const CALL_BUDGET_MS = 48_000;
+export const FOUNDER_BUDGET_MS = 25_000;
 // Safety cap on requests per AI call, whatever the budget.
 export const MAX_ATTEMPTS = 12;
 // Overloaded (5xx) attempts on one model before moving on. Quota errors (429) move on at once.

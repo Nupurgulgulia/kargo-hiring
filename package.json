@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test tests/core.test.ts tests/secrets.test.ts tests/gemini-errors.test.ts tests/auto-send.test.ts",
+    "test": "node --test tests/core.test.ts tests/secrets.test.ts tests/gemini-errors.test.ts tests/auto-send.test.ts tests/founder.test.ts tests/db-retry.test.ts",
     "db:setup": "node --env-file=.env.local scripts/db-setup.mjs"
   },
   "dependencies": {

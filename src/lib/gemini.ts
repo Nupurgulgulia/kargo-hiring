@@ -54,6 +54,7 @@ export async function generateJson<T>(opts: {
   prompt: string;
   schema: Schema;
   temperature?: number;
+  budgetMs?: number; // override the default per-call time budget
 }): Promise<T> {
   const key = process.env.GEMINI_API_KEY?.trim();
   if (!key) throw new Error("GEMINI_API_KEY is not set");
@@ -117,7 +118,7 @@ export async function generateJson<T>(opts: {
     throw new Error("Every Gemini Flash model this key can use is out of quota or unavailable right now. Try again later.");
   }
 
-  const deadline = Date.now() + CALL_BUDGET_MS;
+  const deadline = Date.now() + (opts.budgetMs ?? CALL_BUDGET_MS);
   let lastError = "";
   let quotaError = ""; // a 429 explains more than a trailing 503, so it wins in the final message
   let wait = 0;

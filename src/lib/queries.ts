@@ -1,6 +1,6 @@
 import "server-only";
 import { one, query } from "./db";
-import type { Brief, Candidate, EmailRow, EventRow, ScoreRow } from "./types";
+import type { Brief, Candidate, EmailRow, EventRow, FoundersReadRow, InstinctSignal, ReferenceHire, ScoreRow } from "./types";
 
 export type ListRow = Pick<
   Candidate,
@@ -38,13 +38,27 @@ export async function listCandidates(): Promise<ListRow[]> {
 }
 
 export async function getCandidateDetail(id: string) {
-  const [candidate, scores, brief, email, events] = await Promise.all([
+  const [candidate, scores, brief, email, events, founders] = await Promise.all([
     one<Candidate>("select * from kargo_candidates where id = $1", [id]),
     query<ScoreRow>("select * from kargo_scores where candidate_id = $1", [id]),
     one<{ content: Brief }>("select content from kargo_briefs where candidate_id = $1", [id]),
     one<EmailRow>("select * from kargo_emails where candidate_id = $1", [id]),
     query<EventRow>("select * from kargo_events where candidate_id = $1 order by at desc limit 100", [id]),
+    one<FoundersReadRow>("select * from kargo_founder_reads where candidate_id = $1", [id]),
   ]);
   if (!candidate) return null;
-  return { candidate, scores, brief: brief?.content ?? null, email, events };
+  return { candidate, scores, brief: brief?.content ?? null, email, events, founders };
+}
+
+// Names, outcomes and signal labels the founder's-read card needs to label its chips.
+export async function getInstinctLabels() {
+  const [signals, hires] = await Promise.all([
+    query<Pick<InstinctSignal, "key" | "name" | "position">>("select key, name, position from kargo_instinct_signals order by position"),
+    query<Pick<ReferenceHire, "name" | "outcome" | "pm_score" | "spm_score">>("select name, outcome, pm_score, spm_score from kargo_reference_hires order by position"),
+  ]);
+  return {
+    signalNames: Object.fromEntries(signals.map((s) => [s.key, s.name])) as Record<string, string>,
+    signalOrder: signals.map((s) => s.key),
+    hires: Object.fromEntries(hires.map((h) => [h.name, h])) as Record<string, Pick<ReferenceHire, "name" | "outcome" | "pm_score" | "spm_score">>,
+  };
 }

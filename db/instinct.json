@@ -1,0 +1,423 @@
+{
+  "_about": "Founder's-instinct layer. Distilled from the 8 past-hire CVs and their outcomes. Contact details are deliberately NOT included; hires are cited by first name only. Scores and outcomes must match db/rubric.txt (checked by npm run db:setup). Strength values per hire: strong | some | absent.",
+  "signals": [
+    {
+      "key": "owns_the_miss",
+      "name": "Owns the miss",
+      "strong": "Names a specific failure, loss or killed bet in plain words: what they got wrong or what the data showed, and what changed afterwards.",
+      "weaker": "Every line is a win. Problems appear only as things 'identified' or 'surfaced', never as something the candidate got wrong or gave up on.",
+      "evidence": "Aditya's post-mortem on a lost deal (misread the IT procurement cycle, wrong economic buyer; now standard practice). Lavanya killed 2 features against strong qualitative demand and owned an outage post-mortem to closure. Meghna names the documentation error behind a customs hold. Vikram and Rahul describe no failure at all.",
+      "confidence": "moderate",
+      "overlaps_rubric": "Partly PM criterion 4 (killing features) and crisis ownership. This looks at how the failure is told."
+    },
+    {
+      "key": "absorbs_disruption",
+      "name": "Absorbs the disruption",
+      "strong": "Deals with the problem before it reaches the customer or a manager, and the CV shows what it cost them: a weekend, a night, a rebuilt process.",
+      "weaker": "Problems are handled through process, rotation or stakeholder management; nobody's weekend or night appears.",
+      "evidence": "Meghna worked a 7pm customs hold through the night so the client never knew, with no escalation to management in 14 months. Sunita redesigned the team's intake over a weekend when the vendor changed formats. Rohan built a prototype over a weekend and fixed a critical indexing problem the same day.",
+      "confidence": "moderate",
+      "overlaps_rubric": "Crisis ownership (PM criterion 3, SPM criterion 1). This is the act-first, personal-cost texture."
+    },
+    {
+      "key": "leaves_a_standard",
+      "name": "Leaves a standard behind",
+      "strong": "Something built unasked is still in use and spread beyond their own team, in the CV's own words: 'retained permanently', 'now standard practice', 'now a core platform feature', 'the full CS team now uses'.",
+      "weaker": "Adoption is limited to a team they led or to a process that was already their job, or no adoption is claimed.",
+      "evidence": "All five Exceeds hires: Rohan's tracker and verification module, Sunita's retained workflow and SOPs, Meghna's onboarding framework, Aditya's post-mortem practice, Lavanya's dashboard adopted by 2 other regional teams. Vikram's PRD template was adopted only by the 4-person PM team Vikram sat in; Preetham's dashboard has no adoption claimed.",
+      "confidence": "high",
+      "overlaps_rubric": "PM criterion 2 and SPM criteria 3 and 5. The added question is who adopted it and whether anyone asked."
+    },
+    {
+      "key": "stance_not_inventory",
+      "name": "States a stance, not an inventory",
+      "strong": "The summary says how they believe work should be done, in their own words.",
+      "weaker": "A list of competencies and labels ('strong in discovery, PRD authoring...', 'Growth & Marketing Leader · Team Builder'), or no summary at all.",
+      "evidence": "Lavanya: 'Ship fast, kill what doesn't work, document why.' Meghna: the customer should not be the one managing your mistakes. Rohan: close the gap between what software promises and what field teams actually need. Aditya is the exception (labels only). Vikram, Rahul and Preetham have inventories or nothing.",
+      "confidence": "tentative",
+      "overlaps_rubric": null
+    },
+    {
+      "key": "autonomy_by_absence",
+      "name": "Autonomy defined by what is absent",
+      "strong": "Describes scope by the layers that were not there: 'without a product layer', 'no account manager layer', 'no additional headcount', 'limited oversight', 'sole PM'. Treats missing structure as normal.",
+      "weaker": "Describes scope by the structure navigated: supporting senior PMs, roadmap reviews to the CTO and VP Sales, 'part of a 12-engineer team'.",
+      "evidence": "All five Exceeds hires. Vikram and Preetham are the contrast. Rahul also writes 'no CMO above', so this is necessary but not sufficient.",
+      "confidence": "moderate",
+      "overlaps_rubric": "PM criterion 5 (structure from zero) and the JD's comfort without structure."
+    },
+    {
+      "key": "numbers_measure_others_pain",
+      "name": "The numbers measure someone else's pain",
+      "strong": "Results are about relief for someone doing the work: support tickets down 60%, unresolved exceptions down 28%, churn 6% against a team average of 24%, time-to-first-value down 3 weeks.",
+      "weaker": "Results measure the company or the system: ARR, pipeline, CAC, uptime, query time.",
+      "evidence": "Lavanya and Meghna against Rahul, Preetham and Vikram. Aditya's CV is mostly quota figures, so the signal is weakest there.",
+      "confidence": "tentative",
+      "overlaps_rubric": null
+    },
+    {
+      "key": "operator_first",
+      "name": "Operator first, builder second",
+      "strong": "Spent real years doing the work inside a logistics operation (CHA, 3PL, forwarder, port terminal) and then moved to build or sell the software for it. Uses the work's own vocabulary naturally: berth windows, DO releases, customs holds, bills of lading.",
+      "weaker": "Software or commercial career first, with logistics as a customer segment or an integration (courier APIs) rather than something they did.",
+      "evidence": "Rohan CHA to engineer, Lavanya 3PL to PM, Meghna forwarder to SaaS customer success, Aditya port sales to SaaS sales; Sunita operations to consulting. Preetham's logistics contact is three courier APIs.",
+      "confidence": "high",
+      "overlaps_rubric": "PM criterion 1 and SPM criterion 2. The added part is the direction of travel and the vocabulary."
+    },
+    {
+      "key": "credits_others",
+      "name": "Credits others' outcomes",
+      "strong": "Other people's results are named: a trainee promoted to team lead, a mentee promoted within 14 months, an engineering lead's note, a client that passed inspection with no observations.",
+      "weaker": "Mentoring or leadership is claimed without a result ('mentored 2 junior engineers'), or only self-reported wins appear.",
+      "evidence": "Sunita, Rohan and Lavanya. Preetham's mentoring has no outcome; Vikram, Rahul and Aditya name none.",
+      "confidence": "tentative",
+      "overlaps_rubric": null
+    }
+  ],
+  "hires": [
+    {
+      "slug": "lavanya",
+      "name": "Lavanya",
+      "outcome": "exceeds",
+      "pm_score": 100,
+      "spm_score": 97,
+      "background": "Three years in supply-chain planning and carrier operations at a national 3PL (carrier allocation, exception management, a daily shipment-visibility dashboard, a carrier scorecard process), then sole product manager at a Series A port-and-logistics SaaS covering dock scheduling, carrier integration and freight visibility.",
+      "standout": "Shipped 6 features in 12 months and killed 2 after usage data contradicted strong qualitative demand, moving the capacity to a workflow with 3x weekly active use. Wrote the product's first API documentation (integration timelines down 2 weeks). After a 4-hour outage wrote both the internal and customer-facing post-mortems, ran the retrospective and owned the follow-ups to closure. The dashboard was adopted by 2 other regional teams. An engineering lead's note on the CV says the team trusted these calls immediately and there was no hedging.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "strong",
+          "note": "killed 2 features against customer enthusiasm; owned outage post-mortem to closure"
+        },
+        "absorbs_disruption": {
+          "s": "some",
+          "note": "wrote both post-mortems and closed the actions"
+        },
+        "leaves_a_standard": {
+          "s": "strong",
+          "note": "dashboard adopted by 2 other regional teams; first API docs; carrier scorecard"
+        },
+        "stance_not_inventory": {
+          "s": "strong",
+          "note": "'Ship fast, kill what doesn't work, document why'"
+        },
+        "autonomy_by_absence": {
+          "s": "strong",
+          "note": "sole PM across three product areas"
+        },
+        "numbers_measure_others_pain": {
+          "s": "strong",
+          "note": "support tickets down 60%, delivery exceptions down 28%"
+        },
+        "operator_first": {
+          "s": "strong",
+          "note": "3PL operations first, then product"
+        },
+        "credits_others": {
+          "s": "strong",
+          "note": "engineering lead's note quoted"
+        }
+      }
+    },
+    {
+      "slug": "rohan",
+      "name": "Rohan",
+      "outcome": "exceeds",
+      "pm_score": 91,
+      "spm_score": 94,
+      "background": "Seven years: operations executive at a family CHA firm at JNPT (import/export documentation for 180+ shipments a month, customs and port coordination), then backend engineer, now lead engineer on a freight-tracking platform serving 40+ forwarders. Describes working directly with freight-forwarding ops teams and turning their needs into specs without a product layer.",
+      "standout": "Twice noticed nobody had a reliable way to see where things stood and built the fix unprompted: an Excel shipment tracker adopted across a 12-person ops team within two weeks, and a Bill of Lading verification prototype built over a weekend that 30 colleagues were using within a month and is now a core feature. Migrated off an unreliable legacy data vendor under time pressure with no data loss. Diagnosed a critical database indexing problem in 3 hours and fixed it the same day. A mentee was promoted within 14 months.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "some",
+          "note": "diagnosed and fixed vendor and indexing problems; no own failure described"
+        },
+        "absorbs_disruption": {
+          "s": "strong",
+          "note": "weekend prototype; same-day critical fix"
+        },
+        "leaves_a_standard": {
+          "s": "strong",
+          "note": "tracker adopted by 12; verification module now core"
+        },
+        "stance_not_inventory": {
+          "s": "strong",
+          "note": "close the gap between what software promises and what field teams need"
+        },
+        "autonomy_by_absence": {
+          "s": "strong",
+          "note": "'without a product layer'; most senior engineer in the room"
+        },
+        "numbers_measure_others_pain": {
+          "s": "some",
+          "note": "support queries down 35%, processing lag down 60%"
+        },
+        "operator_first": {
+          "s": "strong",
+          "note": "CHA operations before engineering"
+        },
+        "credits_others": {
+          "s": "strong",
+          "note": "mentee promoted within 14 months"
+        }
+      }
+    },
+    {
+      "slug": "sunita",
+      "name": "Sunita",
+      "outcome": "exceeds",
+      "pm_score": 88,
+      "spm_score": 86,
+      "background": "Seven years in freight-forwarding documentation and customs compliance (200+ shipments a month, including a pharma exporter shipping to 12 countries), then independent operations consultant to a customs broker, a freight forwarder and a bonded warehouse.",
+      "standout": "When the company's freight-management vendor changed its export format without notice, redesigned the team's documentation intake over a weekend so nothing was disrupted, and the team kept the new process permanently. As a consultant ran a full paper-to-cloud migration (scoping, vendor, training, first 30 days), found and fixed four documentation gaps before a DGFT inspection that raised no observations, and wrote SOPs a CHA firm adopted in full within 60 days. A trainee was promoted to team lead within 18 months.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "some",
+          "note": "closes gaps before they bite; no own failure described"
+        },
+        "absorbs_disruption": {
+          "s": "strong",
+          "note": "weekend redesign so nothing was disrupted"
+        },
+        "leaves_a_standard": {
+          "s": "strong",
+          "note": "process retained permanently; SOPs adopted in full"
+        },
+        "stance_not_inventory": {
+          "s": "some",
+          "note": "comfortable owning processes start to finish with limited oversight"
+        },
+        "autonomy_by_absence": {
+          "s": "strong",
+          "note": "independent, limited oversight"
+        },
+        "numbers_measure_others_pain": {
+          "s": "some",
+          "note": "client passed inspection with no observations"
+        },
+        "operator_first": {
+          "s": "some",
+          "note": "operations throughout, then consulting on systems"
+        },
+        "credits_others": {
+          "s": "strong",
+          "note": "trainee promoted to team lead; client passed inspection"
+        }
+      }
+    },
+    {
+      "slug": "meghna",
+      "name": "Meghna",
+      "outcome": "exceeds",
+      "pm_score": 88,
+      "spm_score": 83,
+      "background": "Five years: customer relations and documentation at a Mumbai freight forwarder (12 key accounts, pharma exports), then customer success at a B2B field-operations SaaS, now senior customer success associate on 18 mid-market accounts.",
+      "standout": "Churn of 6% against a team average of 24%, with no escalation to management in 14 months. Resolved a 7pm customs hold caused by a documentation error by working through the night with the CHA and the customs officer so the client never knew and the shipment left on schedule. Built the 30-60-90 onboarding framework the whole customer success team now uses, and an onboarding checklist that became the team standard. The profile line says the customer should not be the one managing your mistakes.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "strong",
+          "note": "names the documentation error and fixes it before the client knows"
+        },
+        "absorbs_disruption": {
+          "s": "strong",
+          "note": "worked the customs hold through the night"
+        },
+        "leaves_a_standard": {
+          "s": "strong",
+          "note": "onboarding framework the full CS team now uses"
+        },
+        "stance_not_inventory": {
+          "s": "strong",
+          "note": "the customer should not be the one managing your mistakes"
+        },
+        "autonomy_by_absence": {
+          "s": "strong",
+          "note": "no escalation to management in 14 months"
+        },
+        "numbers_measure_others_pain": {
+          "s": "strong",
+          "note": "churn 6% against a team average of 24%"
+        },
+        "operator_first": {
+          "s": "strong",
+          "note": "freight forwarder before SaaS"
+        },
+        "credits_others": {
+          "s": "some",
+          "note": "covered a departing colleague's accounts with no churn"
+        }
+      }
+    },
+    {
+      "slug": "aditya",
+      "name": "Aditya",
+      "outcome": "exceeds",
+      "pm_score": 68,
+      "spm_score": 63,
+      "background": "Enterprise sales: began as a sales trainee at a shipping line, then two years selling port-terminal services at JNPT to 25 forwarder and NVOCC clients with no account-manager layer, now senior enterprise account executive at a supply-chain-visibility SaaS (14 accounts, above 110% of quota for five quarters). The weakest of the five Exceeds hires on the rubric.",
+      "standout": "Spent four months on a large forwarder account that did not buy, then ran a post-mortem naming the cause (misread the IT procurement cycle, wrong economic buyer) and shared it; it is now standard practice before account qualification. Built the company's first case-study programme, now primary sales collateral. At JNPT won 3 accounts from a competitor that handled a port congestion incident poorly, and worked alongside terminal operations at peak, understanding berth windows, DO releases and last-minute document corrections.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "strong",
+          "note": "post-mortem on a lost deal naming their own misread"
+        },
+        "absorbs_disruption": {
+          "s": "some",
+          "note": "worked alongside terminal ops at peak periods"
+        },
+        "leaves_a_standard": {
+          "s": "strong",
+          "note": "post-mortem now standard practice; case-study programme"
+        },
+        "stance_not_inventory": {
+          "s": "absent",
+          "note": "header is labels only"
+        },
+        "autonomy_by_absence": {
+          "s": "strong",
+          "note": "no account-manager layer between client and execution"
+        },
+        "numbers_measure_others_pain": {
+          "s": "some",
+          "note": "mostly quota figures; the port-congestion win is the exception"
+        },
+        "operator_first": {
+          "s": "strong",
+          "note": "port terminal services before SaaS"
+        },
+        "credits_others": {
+          "s": "absent",
+          "note": "no one else's outcomes named"
+        }
+      }
+    },
+    {
+      "slug": "vikram",
+      "name": "Vikram",
+      "outcome": "meets",
+      "pm_score": 44,
+      "spm_score": 39,
+      "background": "Three years as a product manager at a Series B HR-tech SaaS (candidate-lifecycle module used by 400+ enterprise clients) after an MBA, preceded by two years as an associate PM supporting senior PMs. No logistics exposure.",
+      "standout": "Shipped 12 features in 18 months, three moved to a premium tier (about $180K incremental ARR), adoption up 34% after 40+ user interviews, built a PRD template and sprint review process adopted by the 4-person PM team, spoke at a PM conference and holds Product School and Reforge credentials. Polished and structured. The CV lists no killed features, no incidents, no failures, and no work outside an existing PM structure.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "absent",
+          "note": "every item is a win; nothing killed or failed"
+        },
+        "absorbs_disruption": {
+          "s": "absent",
+          "note": "stakeholder management, not firefighting"
+        },
+        "leaves_a_standard": {
+          "s": "some",
+          "note": "PRD template adopted only by the 4-person PM team Vikram sat in"
+        },
+        "stance_not_inventory": {
+          "s": "absent",
+          "note": "summary is a competency list"
+        },
+        "autonomy_by_absence": {
+          "s": "absent",
+          "note": "supported senior PMs; roadmap reviews to the CTO and VP Sales"
+        },
+        "numbers_measure_others_pain": {
+          "s": "some",
+          "note": "mostly ARR and adoption; one support-volume cut"
+        },
+        "operator_first": {
+          "s": "absent",
+          "note": "no operations background"
+        },
+        "credits_others": {
+          "s": "absent",
+          "note": "no one else's outcomes named"
+        }
+      }
+    },
+    {
+      "slug": "rahul",
+      "name": "Rahul",
+      "outcome": "meets",
+      "pm_score": 39,
+      "spm_score": 36,
+      "background": "Growth and marketing leader at a Series B fintech SaaS, reporting to the CEO with no CMO above, who built a 4-person team; earlier built the content programme from zero at an HR-tech SaaS. Marketing only, with no logistics exposure.",
+      "standout": "Pipeline of 2.4 crore in FY24 at 120% of target, CAC down 28%, MQL-to-SQL up from 12% to 19%, and launched the company's first customer case-study programme (the sales team's most-used deal collateral). Real ownership and a build-from-zero record, but every number is a funnel win, no failures or abandoned bets are described, and nothing connects to operations or to the customer's day-to-day work.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "absent",
+          "note": "every number is a win; no abandoned bets"
+        },
+        "absorbs_disruption": {
+          "s": "absent",
+          "note": "no incidents described"
+        },
+        "leaves_a_standard": {
+          "s": "some",
+          "note": "case studies and nurture redesign used by sales"
+        },
+        "stance_not_inventory": {
+          "s": "absent",
+          "note": "header is titles and labels"
+        },
+        "autonomy_by_absence": {
+          "s": "some",
+          "note": "no CMO above; reports to the CEO"
+        },
+        "numbers_measure_others_pain": {
+          "s": "absent",
+          "note": "pipeline, CAC and conversion only"
+        },
+        "operator_first": {
+          "s": "absent",
+          "note": "marketing only"
+        },
+        "credits_others": {
+          "s": "absent",
+          "note": "built a team but names no one's outcome"
+        }
+      }
+    },
+    {
+      "slug": "preetham",
+      "name": "Preetham",
+      "outcome": "below",
+      "pm_score": 41,
+      "spm_score": 51,
+      "background": "Six years as a backend engineer at a 3,200-person e-commerce company, one of 12 engineers on the order-management platform, owning the API gateway service and having integrated three courier APIs. Preetham's SPM score (51) sits above two Meets hires, the rubric's own noted limitation at the lower tier.",
+      "standout": "Strong individual technical results: query time down 40% from an indexing redesign, 99.95% gateway uptime, a batch-to-event pipeline cutting lag from 4 hours to 8 minutes, 22-minute P1 resolution. Built a monitoring dashboard that surfaced a coupon bug costing about 12 lakh a month and patched it within 48 hours. Mentored two junior engineers. Everything is measured in system metrics and framed as part of a team and an on-call rotation; no customer or operations contact is visible.",
+      "signals": {
+        "owns_the_miss": {
+          "s": "some",
+          "note": "found and patched a costly bug; no own failure described"
+        },
+        "absorbs_disruption": {
+          "s": "some",
+          "note": "shared P1 on-call rotation"
+        },
+        "leaves_a_standard": {
+          "s": "absent",
+          "note": "dashboard not shown as adopted by anyone else"
+        },
+        "stance_not_inventory": {
+          "s": "absent",
+          "note": "no summary; skills list first"
+        },
+        "autonomy_by_absence": {
+          "s": "some",
+          "note": "owns a service inside a 12-person team"
+        },
+        "numbers_measure_others_pain": {
+          "s": "absent",
+          "note": "system metrics only"
+        },
+        "operator_first": {
+          "s": "absent",
+          "note": "courier API integrations, no operations work"
+        },
+        "credits_others": {
+          "s": "absent",
+          "note": "mentored two engineers, no outcome stated"
+        }
+      }
+    }
+  ]
+}

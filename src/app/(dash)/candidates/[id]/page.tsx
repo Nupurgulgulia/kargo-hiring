@@ -9,7 +9,9 @@ import {
   EmailComposer,
 } from "@/components/candidate-panels";
 import { Badge, Card, CardHeader, ScoreBar } from "@/components/ui";
-import { getCandidateDetail } from "@/lib/queries";
+import { FoundersReadCard } from "@/components/founders-read";
+import { foundersReadStatus } from "@/lib/founder-rules";
+import { getCandidateDetail, getInstinctLabels } from "@/lib/queries";
 import { tierFor } from "@/lib/scoring";
 import { getRubrics } from "@/lib/db";
 import { autoSendRejectionsEnabled } from "@/lib/auto-send";
@@ -27,6 +29,9 @@ const EVENT_LABELS: Record<string, string> = {
   pipeline_failed: "Processing failed",
   reprocess_requested: "Re-score requested",
   extraction_reused: "Reused saved profile (resuming after a failure)",
+  founders_read_written: "Founder's read written",
+  founders_read_failed: "Founder's read failed",
+  founders_read_requested: "Founder's read requested",
   redraft_requested: "Redraft requested",
   email_edited: "Draft edited",
   email_sent: "Email sent",
@@ -54,6 +59,8 @@ function describe(e: EventRow): string | null {
   if (e.action === "email_test_sent") return `${d.kind} to ${d.to} (instead of ${d.intended ?? "no email on file"})`;
   if (e.action === "pipeline_failed" || e.action === "email_send_failed" || e.action === "email_auto_failed") return String(d.error ?? "");
   if (e.action === "email_auto_skipped") return String(d.reason ?? "");
+  if (e.action === "founders_read_written") return `resembles ${Array.isArray(d.resembles) ? d.resembles.join(" and ") : "no one"} (${d.match_quality} match)`;
+  if (e.action === "founders_read_failed") return String(d.error ?? "");
   if (e.action === "updated") {
     const parts = [d.decision ? `decision: ${d.decision}` : null, d.notes ? `notes: “${String(d.notes).slice(0, 140)}”` : null];
     return parts.filter(Boolean).join(" · ") || (Array.isArray(d.fields) ? d.fields.join(", ") : null);
@@ -107,9 +114,14 @@ function RubricCard({ score, threshold, applied }: { score: ScoreRow; threshold:
 export default async function CandidatePage({ params }: PageProps<"/candidates/[id]">) {
   await connection();
   const { id } = await params;
-  const [detail, rubrics] = await Promise.all([getCandidateDetail(id), getRubrics()]);
+  const [detail, rubrics, instinct] = await Promise.all([getCandidateDetail(id), getRubrics(), getInstinctLabels()]);
   if (!detail) notFound();
-  const { candidate: c, scores, brief, email, events } = detail;
+  const { candidate: c, scores, brief, email, events, founders } = detail;
+
+  // The founder's read is written right after scoring finishes; keep refreshing while it is on its way.
+  const read = foundersReadStatus({ status: c.status, hasRead: Boolean(founders), events });
+  const readPending = read.pending;
+  const readError = read.error;
 
   const applied = c.applied_role;
   const other: Role = applied === "PM" ? "SPM" : "PM";
@@ -123,7 +135,7 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
 
   return (
     <div className="space-y-5">
-      <AutoRefresh active={c.status === "processing"} />
+      <AutoRefresh active={c.status === "processing" || readPending} />
       <Link href="/" className="text-sm text-muted hover:text-ink">← Shortlist</Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -182,6 +194,10 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
             <p className="text-xs text-muted">
               Note from calibration: the SPM rubric reliably separates “Exceeds” from “did not exceed”, but is not a precise ranking within the lower tier.
             </p>
+          )}
+
+          {c.status === "ready" && (
+            <FoundersReadCard candidateId={c.id} founders={founders} labels={instinct} pending={readPending} lastError={readError} />
           )}
 
           {brief && (

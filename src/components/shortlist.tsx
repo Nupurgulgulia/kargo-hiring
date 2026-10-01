@@ -52,7 +52,7 @@ export function Shortlist({
       if (sort === "newest") return b.created_at.localeCompare(a.created_at);
       return (key(b) ?? -1) - (key(a) ?? -1);
     });
-  }, [rows, filter, sort]);
+  }, [rows, filter, sort, testRecipient]);
 
   return (
     <Card>

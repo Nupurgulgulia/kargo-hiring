@@ -115,3 +115,33 @@ export type EventRow = {
   action: string;
   detail: Record<string, unknown> | null;
 };
+
+export type ReferenceHire = {
+  slug: string;
+  position: number;
+  name: string;
+  outcome: "exceeds" | "meets" | "below";
+  pm_score: number;
+  spm_score: number;
+  background: string;
+  standout: string;
+  signals: Record<string, { s: "strong" | "some" | "absent"; note: string }>;
+};
+
+export type InstinctSignal = {
+  key: string;
+  position: number;
+  name: string;
+  strong: string;
+  weaker: string;
+  evidence: string;
+  confidence: "high" | "moderate" | "tentative";
+  overlaps_rubric: string | null;
+};
+
+export type FoundersReadRow = {
+  candidate_id: string;
+  content: import("./founder-rules").FoundersRead;
+  model: string | null;
+  created_at: string;
+};

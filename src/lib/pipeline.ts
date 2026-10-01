@@ -3,6 +3,7 @@ import { draftEmail, extractProfile, scoreAgainstRubric, writeBrief } from "./ai
 import { autoSendRejectionsEnabled, shouldAutoSend } from "./auto-send";
 import { getRubrics, json, logEvent, one, query } from "./db";
 import { sendCandidateEmail } from "./email";
+import { tryFoundersRead } from "./founder";
 import { activeModel } from "./gemini";
 import { assertNoPII } from "./pii";
 import { recommendationFor } from "./scoring";
@@ -105,6 +106,8 @@ export async function processCandidate(id: string, opts: { resume?: boolean } = 
     await setCandidate(id, { status: "ready", error: null });
     await logEvent(id, "system", "pipeline_complete", { ms: Date.now() - started });
     await autoSendRejection(id, recommendation);
+    // The founder's read comes last and is optional: it never changes a score, a recommendation or an email.
+    await tryFoundersRead(id);
   } catch (err) {
     const message = errorMessage(err);
     await setCandidate(id, { status: "error", error: message });

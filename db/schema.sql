@@ -96,3 +96,42 @@ alter table public.kargo_briefs     enable row level security;
 alter table public.kargo_emails     enable row level security;
 alter table public.kargo_events     enable row level security;
 alter table public.kargo_cv_files   enable row level security;
+
+-- Founder's-instinct layer (additive to the rubric; see db/instinct.json and docs/founders-instinct.md).
+-- Qualitative signals distilled from the 8 past-hire CVs.
+create table if not exists public.kargo_instinct_signals (
+  key text primary key,
+  position int not null,
+  name text not null,
+  strong text not null,
+  weaker text not null,
+  evidence text not null,
+  confidence text not null check (confidence in ('high','moderate','tentative')),
+  overlaps_rubric text
+);
+
+-- The 8 past hires as reference points: first names only, no contact details.
+create table if not exists public.kargo_reference_hires (
+  slug text primary key,
+  position int not null,
+  name text not null,
+  outcome text not null check (outcome in ('exceeds','meets','below')),
+  pm_score numeric not null,
+  spm_score numeric not null,
+  background text not null,
+  standout text not null,
+  signals jsonb not null
+);
+
+-- One founder's read per candidate: pattern-matching for Arjun to weigh. Never used to score,
+-- recommend, or send anything.
+create table if not exists public.kargo_founder_reads (
+  candidate_id uuid primary key references public.kargo_candidates(id) on delete cascade,
+  content jsonb not null,
+  model text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.kargo_instinct_signals enable row level security;
+alter table public.kargo_reference_hires  enable row level security;
+alter table public.kargo_founder_reads    enable row level security;

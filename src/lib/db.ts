@@ -1,6 +1,7 @@
 import "server-only";
 import { attachDatabasePool } from "@vercel/functions";
-import { Pool, types, type QueryResultRow } from "pg";
+import { Pool, types, type PoolClient, type QueryResultRow } from "pg";
+import { isReadOnlySql, isTransientConnectionError, RETRY_DELAYS_MS } from "./db-retry";
 import { redactSecrets } from "./secrets";
 import type { EventRow, Rubric, Role } from "./types";
 
@@ -19,14 +20,41 @@ function getPool(): Pool {
   if (pool) return pool;
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL must be set");
-  pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 5000 });
+  pool = new Pool({ connectionString, max: 5, idleTimeoutMillis: 5000, keepAlive: true });
+  // An idle client dropped by the server emits an error on the pool; without a handler it would crash the process.
+  pool.on("error", () => {});
   attachDatabasePool(pool);
   return pool;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Neon wakes a suspended database on the first connection, which can drop once. So: a failed
+// connect is always retried (nothing was sent), and a failed read is retried too. A write that
+// failed after being sent is not retried, because it may already have run.
 export async function query<T extends QueryResultRow = QueryResultRow>(text: string, params: unknown[] = []): Promise<T[]> {
-  const res = await getPool().query<T>(text, params);
-  return res.rows;
+  const readOnly = isReadOnlySql(text);
+  for (let attempt = 0; ; attempt++) {
+    const delay = RETRY_DELAYS_MS[attempt];
+    let client: PoolClient;
+    try {
+      client = await getPool().connect();
+    } catch (err) {
+      if (delay === undefined || !isTransientConnectionError(err)) throw err;
+      await sleep(delay);
+      continue;
+    }
+    try {
+      const res = await client.query<T>(text, params);
+      client.release();
+      return res.rows;
+    } catch (err) {
+      const connectionBroke = isTransientConnectionError(err);
+      client.release(connectionBroke); // true destroys a broken client instead of returning it to the pool
+      if (!(connectionBroke && readOnly) || delay === undefined) throw err;
+      await sleep(delay);
+    }
+  }
 }
 
 export async function one<T extends QueryResultRow = QueryResultRow>(text: string, params: unknown[] = []): Promise<T | null> {

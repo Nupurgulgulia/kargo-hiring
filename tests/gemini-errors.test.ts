@@ -3,6 +3,7 @@ import { test } from "node:test";
 import {
   backoffMs,
   CALL_BUDGET_MS,
+  FOUNDER_BUDGET_MS,
   describeGeminiError,
   isRetryable,
   MAX_ATTEMPTS,
@@ -111,6 +112,6 @@ test("Flash-Lite ranks after full Flash models", () => {
   assert.deepEqual(ranked, ["gemini-3.8-flash", "gemini-2.5-flash", "gemini-3.5-flash-lite"]);
 });
 
-test("five sequential AI calls fit inside the 300s function limit", () => {
-  assert.ok(5 * CALL_BUDGET_MS < 300_000);
+test("five essential AI calls plus the founder's read (two attempts) fit inside the 300s limit", () => {
+  assert.ok(5 * CALL_BUDGET_MS + 2 * FOUNDER_BUDGET_MS < 300_000);
 });
