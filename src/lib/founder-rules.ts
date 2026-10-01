@@ -3,6 +3,8 @@
 // The read is pattern-matching for Arjun to weigh. It must never become a verdict, never lean on
 // protected attributes, and never cite a past hire who isn't one of the eight on file.
 
+import { VERDICT_BASE } from "./verdict.ts";
+
 export type SignalStrength = "strong" | "some" | "absent";
 export type MatchQuality = "close" | "partial" | "loose";
 export type Outcome = "exceeds" | "meets" | "below";
@@ -18,14 +20,8 @@ export type FoundersRead = {
 export const READ_MIN_WORDS = 60;
 export const READ_MAX_WORDS = 170;
 
-// Phrases that turn a pattern observation into a decision.
-const VERDICT = [
-  /\b(?:should|must|need(?:s)? to|ought to|have to)\s+(?:definitely\s+)?(?:hire|reject|pass on|decline|interview|move forward|invite|fast[- ]track|advance)\b/i,
-  /\b(?:i(?:'d| would| will|'ll)|we(?:'d| would| will|'ll))\s+(?:definitely\s+)?(?:hire|reject|pass on|decline|interview|move forward with|invite|fast[- ]track|advance)\b/i,
-  /\b(?:hire|reject|pass on|decline|interview|invite|advance)\s+(?:this candidate|them|this one)\b/i,
-  /\b(?:no[- ]hire|strong hire|must[- ]hire|auto[- ]?(?:hire|reject)|easy (?:hire|reject|pass))\b/i,
-  /\b(?:recommend\w*|verdict|final call is)\b/i,
-];
+// Phrases that turn a pattern observation into a decision (shared with the interview brief).
+const VERDICT = VERDICT_BASE;
 
 // Gendered pronouns: nobody's pronouns are known here, so the read uses names and "they".
 const GENDERED = /\b(?:he|she|his|hers?|him|himself|herself)\b/i;

@@ -10,6 +10,7 @@ import {
 } from "@/components/candidate-panels";
 import { Badge, Card, CardHeader, ScoreBar } from "@/components/ui";
 import { FoundersReadCard } from "@/components/founders-read";
+import { summaryOf } from "@/lib/brief-rules";
 import { foundersReadStatus } from "@/lib/founder-rules";
 import { getCandidateDetail, getInstinctLabels } from "@/lib/queries";
 import { tierFor } from "@/lib/scoring";
@@ -50,6 +51,10 @@ function describe(e: EventRow): string | null {
   if (e.action === "email_sent") return `${d.kind} to ${d.to}`;
   if (e.action === "email_test_sent") return `${d.kind} to ${d.to} (instead of ${d.intended ?? "no email on file"})`;
   if (e.action === "pipeline_failed" || e.action === "email_send_failed") return String(d.error ?? "");
+  if (e.action === "brief_written" && (d.retried || d.verdict_sentences_removed)) {
+    const n = Number(d.verdict_sentences_removed ?? 0);
+    return [d.retried ? "rewritten once to remove a recommendation" : null, n ? `${n} verdict sentence${n === 1 ? "" : "s"} removed` : null].filter(Boolean).join(" · ");
+  }
   if (e.action === "founders_read_written") return `resembles ${Array.isArray(d.resembles) ? d.resembles.join(" and ") : "no one"} (${d.match_quality} match)`;
   if (e.action === "founders_read_failed") return String(d.error ?? "");
   if (e.action === "updated") {
@@ -193,16 +198,19 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
 
           {brief && (
             <Card>
-              <CardHeader title="Interview brief" sub={brief.headline} />
+              <CardHeader title="Interview brief" sub={brief.headline} aside={<Badge>Evidence and scores, no recommendation</Badge>} />
               <div className="space-y-4 p-4 text-sm sm:p-5">
-                <p className="leading-relaxed">{brief.fit_summary}</p>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">Evidence summary</h3>
+                  <p className="mt-1.5 leading-relaxed">{summaryOf(brief)}</p>
+                </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wide text-good">Strengths</h3>
                     <ul className="mt-1.5 list-disc space-y-1 pl-4">{(brief.strengths ?? []).map((s, i) => <li key={i}>{s}</li>)}</ul>
                   </div>
                   <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-warn">Gaps and risks</h3>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-warn">What the CV doesn&apos;t show</h3>
                     <ul className="mt-1.5 list-disc space-y-1 pl-4">{(brief.gaps ?? []).map((s, i) => <li key={i}>{s}</li>)}</ul>
                   </div>
                 </div>

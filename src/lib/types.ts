@@ -59,14 +59,7 @@ export type Extraction = {
   location: string;
 };
 
-export type Brief = {
-  headline: string;
-  fit_summary: string;
-  strengths: string[];
-  gaps: string[];
-  questions: { question: string; probes: string }[];
-  verify: string[];
-};
+export type Brief = import("./brief-rules").BriefContent;
 
 export type EmailKind = "invite" | "reject";
 export type EmailStatus = "draft" | "sending" | "sent" | "failed";

@@ -86,7 +86,7 @@ export async function processCandidate(id: string, opts: { resume?: boolean } = 
     });
 
     // AI step 3 — interview brief
-    const brief = await writeBrief(
+    const { brief, retried, removed } = await writeBrief(
       c.applied_role,
       extraction,
       scored.map((s) => ({ role: s.role, total: s.total, threshold: rubrics[s.role].threshold, criteria: s.criteria })),
@@ -96,7 +96,11 @@ export async function processCandidate(id: string, opts: { resume?: boolean } = 
        on conflict (candidate_id) do update set content = excluded.content, model = excluded.model, created_at = now()`,
       [id, json(brief), activeModel()],
     );
-    await logEvent(id, "ai", "brief_written", { model: activeModel() });
+    await logEvent(id, "ai", "brief_written", {
+      model: activeModel(),
+      ...(retried ? { retried: true } : {}),
+      ...(removed.length ? { verdict_sentences_removed: removed.length } : {}),
+    });
 
     // AI step 4 — outreach draft (never sent here)
     await saveDraft(id, recommendation, c.applied_role, extraction, brief);
