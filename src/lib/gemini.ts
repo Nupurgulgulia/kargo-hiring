@@ -25,7 +25,7 @@ const API = "https://generativelanguage.googleapis.com/v1beta";
 
 let workingModel: string | null = null;
 const unavailable = new Set<string>();
-let discovery: Promise<string[]> | null = null;
+let discovery: Promise<{ models: string[]; failed?: string }> | null = null;
 
 // The model that most recently produced a result, for the record stored with each AI output.
 export function activeModel(): string {
@@ -34,10 +34,12 @@ export function activeModel(): string {
 
 type Schema = Record<string, unknown>;
 
-function discoverFlashModels(key: string): Promise<string[]> {
+function discoverFlashModels(key: string): Promise<{ models: string[]; failed?: string }> {
   discovery ??= fetch(`${API}/models?pageSize=200`, { headers: { "x-goog-api-key": key } })
-    .then(async (res) => (res.ok ? rankFlashModels((await res.json())?.models ?? []) : []))
-    .catch(() => []);
+    .then(async (res) =>
+      res.ok ? { models: rankFlashModels((await res.json())?.models ?? []) } : { models: [], failed: String(res.status) },
+    )
+    .catch(() => ({ models: [], failed: "network error" }));
   return discovery;
 }
 
@@ -71,13 +73,29 @@ export async function generateJson<T>(opts: {
   let discovered = false;
   let index = 0;
   let overloads = 0;
+  // Which models were tried and what they returned, attached to the error if every attempt fails.
+  const trail: string[] = [];
+  const note = (entry: string) => {
+    const last = trail.at(-1);
+    const m = last?.match(/^(.*) ×(\d+)$/);
+    if (last === entry) trail[trail.length - 1] = `${entry} ×2`;
+    else if (m && m[1] === entry) trail[trail.length - 1] = `${entry} ×${Number(m[2]) + 1}`;
+    else trail.push(entry);
+  };
+  const failWith = (message: string) => new Error(trail.length ? `${message} Tried: ${trail.join(", ")}.` : message);
 
   // Move to the next model; when the known ones run out, append what the key can actually use.
   const nextModel = async (): Promise<boolean> => {
     overloads = 0;
     if (index + 1 >= chain.length && !discovered) {
       discovered = true;
-      for (const m of await discoverFlashModels(key)) if (!chain.includes(m) && !unavailable.has(m)) chain.push(m);
+      const { models: found, failed } = await discoverFlashModels(key);
+      chain.push(...found.filter((m) => !chain.includes(m) && !unavailable.has(m)));
+      trail.push(
+        failed
+          ? `[model list unavailable: ${failed}]`
+          : `[key can use ${found.length} Flash model${found.length === 1 ? "" : "s"}: ${found.join(" / ") || "none"}]`,
+      );
     }
     if (index + 1 < chain.length) {
       index++;
@@ -101,14 +119,16 @@ export async function generateJson<T>(opts: {
     });
 
     if (res.status === 404) {
+      note(`${model} 404`);
       lastError = describeGeminiError(404, await res.text(), model);
       unavailable.add(model);
       if (workingModel === model) workingModel = null;
       wait = 0;
       if (await nextModel()) continue;
-      throw new Error(lastError);
+      throw failWith(lastError);
     }
     if (isRetryable(res.status)) {
+      note(`${model} ${res.status}`);
       lastError = describeGeminiError(res.status, await res.text(), model);
       wait = backoffMs(attempt + 1, res.headers.get("retry-after"));
       // A different model needs no long cool-down.
@@ -116,7 +136,8 @@ export async function generateJson<T>(opts: {
       continue;
     }
     if (!res.ok) {
-      throw new Error(describeGeminiError(res.status, await res.text(), model));
+      note(`${model} ${res.status}`);
+      throw failWith(describeGeminiError(res.status, await res.text(), model));
     }
 
     const json = await res.json();
@@ -137,5 +158,5 @@ export async function generateJson<T>(opts: {
       wait = 1000;
     }
   }
-  throw new Error(lastError || "Gemini request failed");
+  throw failWith(lastError || "Gemini request failed");
 }

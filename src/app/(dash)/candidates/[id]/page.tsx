@@ -25,6 +25,7 @@ const EVENT_LABELS: Record<string, string> = {
   pipeline_complete: "Ready for review",
   pipeline_failed: "Processing failed",
   reprocess_requested: "Re-score requested",
+  extraction_reused: "Reused saved profile (resuming after a failure)",
   redraft_requested: "Redraft requested",
   email_edited: "Draft edited",
   email_sent: "Email sent",

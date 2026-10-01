@@ -27,7 +27,8 @@ async function setCandidate(id: string, fields: Record<string, unknown>) {
   );
 }
 
-export async function processCandidate(id: string) {
+// resume: the previous run failed, so reuse its saved extraction instead of asking Gemini again.
+export async function processCandidate(id: string, opts: { resume?: boolean } = {}) {
   const started = Date.now();
   try {
     const c = await loadCandidate(id);
@@ -37,19 +38,24 @@ export async function processCandidate(id: string) {
 
     const rubrics = await getRubrics();
 
-    // AI step 1 — extraction
-    const extraction = await extractProfile(c.redacted_text);
-    assertNoPII(JSON.stringify(extraction), contact);
-    await query("update kargo_candidates set extracted = $2::jsonb where id = $1", [id, json(extraction)]);
-    await logEvent(id, "ai", "extracted", { model: activeModel(), roles: extraction.roles.length });
+    // AI step 1 — extraction (skipped when resuming a failed run that already has one)
+    let extraction: Extraction;
+    if (opts.resume && c.extracted) {
+      extraction = c.extracted;
+      await logEvent(id, "system", "extraction_reused", { roles: extraction.roles.length });
+    } else {
+      extraction = await extractProfile(c.redacted_text);
+      assertNoPII(JSON.stringify(extraction), contact);
+      await query("update kargo_candidates set extracted = $2::jsonb where id = $1", [id, json(extraction)]);
+      await logEvent(id, "ai", "extracted", { model: activeModel(), roles: extraction.roles.length });
+    }
 
-    // AI step 2 — score against BOTH rubrics, regardless of the role applied for
-    const scored = await Promise.all(
-      ROLES.map(async (role) => ({
-        role,
-        ...(await scoreAgainstRubric(rubrics[role], c.redacted_text!, extraction)),
-      })),
-    );
+    // AI step 2 — score against BOTH rubrics, regardless of the role applied for.
+    // One at a time: two simultaneous requests are what tipped Gemini into 503s.
+    const scored = [];
+    for (const role of ROLES) {
+      scored.push({ role, ...(await scoreAgainstRubric(rubrics[role], c.redacted_text!, extraction)) });
+    }
     for (const s of scored) {
       await query(
         `insert into kargo_scores (candidate_id, role, total, criteria, summary, model)
