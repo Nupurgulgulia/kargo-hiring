@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const autoReject = autoSendRejectionsEnabled();
 
   const ready = rows.filter((r) => r.status === "ready");
-  const mail = emailStats(rows);
+  const mail = emailStats(rows, Boolean(testTo));
   const stats: { label: string; value: number; hint?: string }[] = [
     { label: "Candidates", value: rows.length },
     { label: "Recommended to interview", value: ready.filter((r) => r.recommendation === "invite").length },

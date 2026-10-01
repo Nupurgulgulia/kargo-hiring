@@ -9,25 +9,25 @@ export type EmailStatRow = {
   email_status: EmailStatus | null;
   email_kind: EmailKind | null;
   test_sends: number; // emails delivered to the test address (from the activity log)
-  auto_handled: boolean; // a rejection was already emailed automatically (test or real)
 };
 
-// Is this candidate's draft still waiting for Arjun? A rejection already sent automatically (to the
-// test address, which leaves its draft unsent) is not waiting for him.
-export function isAwaitingYourSend(r: EmailStatRow): boolean {
+// Is this candidate's email still waiting to be sent? While test mode is on, a draft that has been
+// test-sent counts as done (a send was made, to the test address). When test mode is off, test sends
+// stop counting: nothing has reached the candidate, so the draft is awaiting again.
+export function isAwaitingYourSend(r: EmailStatRow, testMode: boolean): boolean {
   if (r.status !== "ready") return false;
   if (r.email_status !== "draft" && r.email_status !== "failed") return false;
-  if (r.email_kind === "reject" && r.email_status === "draft" && r.auto_handled) return false;
+  if (testMode && r.email_status === "draft" && r.test_sends > 0) return false;
   return true;
 }
 
-export function emailStats(rows: EmailStatRow[]) {
+export function emailStats(rows: EmailStatRow[], testMode: boolean) {
   // Emails that reached candidates.
   const sentToCandidates = rows.filter((r) => r.email_status === "sent").length;
   // Emails delivered by Resend to the test address while test mode is on.
   const testSends = rows.reduce((sum, r) => sum + (r.test_sends || 0), 0);
-  const awaitingYourSend = rows.filter(isAwaitingYourSend).length;
   // Every email Resend delivered, to a candidate or to the test address: the one "Emails sent" number.
   const emailsSent = sentToCandidates + testSends;
+  const awaitingYourSend = rows.filter((r) => isAwaitingYourSend(r, testMode)).length;
   return { emailsSent, sentToCandidates, testSends, awaitingYourSend };
 }

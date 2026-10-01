@@ -43,7 +43,7 @@ export function Shortlist({
   const visible = useMemo(() => {
     const f = rows.filter((r) => {
       if (filter === "PM" || filter === "SPM") return r.applied_role === filter;
-      if (filter === "todo") return isAwaitingYourSend(r);
+      if (filter === "todo") return isAwaitingYourSend(r, Boolean(testRecipient));
       return true;
     });
     const key = (r: ListRow) =>
