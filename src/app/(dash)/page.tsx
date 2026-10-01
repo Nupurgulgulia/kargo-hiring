@@ -1,7 +1,6 @@
 import { connection } from "next/server";
 import { Shortlist } from "@/components/shortlist";
 import { Uploader } from "@/components/uploader";
-import { autoSendRejectionsEnabled } from "@/lib/auto-send";
 import { getRubrics } from "@/lib/db";
 import { testRecipient } from "@/lib/email";
 import { listCandidates } from "@/lib/queries";
@@ -11,7 +10,6 @@ export default async function DashboardPage() {
   await connection();
   const [rows, rubrics] = await Promise.all([listCandidates(), getRubrics()]);
   const testTo = testRecipient();
-  const autoReject = autoSendRejectionsEnabled();
 
   const ready = rows.filter((r) => r.status === "ready");
   const mail = emailStats(rows, Boolean(testTo));
@@ -28,9 +26,7 @@ export default async function DashboardPage() {
         <h1 className="text-xl font-semibold tracking-tight">Shortlist</h1>
         <p className="mt-1 text-sm text-muted">
           Every CV is scored on both the PM and SPM rubrics.{" "}
-          {autoReject
-            ? "Rejections are emailed automatically once scoring finishes; invites are only sent when you click Send."
-            : "Drafts are never sent until you click Send."}
+          Drafts are never sent until you click Send.
         </p>
       </div>
 

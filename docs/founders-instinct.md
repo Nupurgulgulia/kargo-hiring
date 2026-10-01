@@ -72,7 +72,7 @@ the interview brief.
 What it is **not**:
 
 - It does not change the score, the recommendation, the decision, or any email. Nothing in the
-  scoring, auto-send or send code reads it.
+  scoring or send code reads it.
 - It does not tell Arjun what to do. A validator rejects drafts containing hire/reject/interview
   language, retries once with the reasons, and otherwise shows no read at all.
 - It does not invent history. The model may only use what is in the candidate's CV and in the eight

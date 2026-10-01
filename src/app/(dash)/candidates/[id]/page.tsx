@@ -14,7 +14,6 @@ import { foundersReadStatus } from "@/lib/founder-rules";
 import { getCandidateDetail, getInstinctLabels } from "@/lib/queries";
 import { tierFor } from "@/lib/scoring";
 import { getRubrics } from "@/lib/db";
-import { autoSendRejectionsEnabled } from "@/lib/auto-send";
 import { testRecipient } from "@/lib/email";
 import type { EventRow, Role, ScoreRow } from "@/lib/types";
 import { ROLE_TITLES } from "@/lib/types";
@@ -36,18 +35,11 @@ const EVENT_LABELS: Record<string, string> = {
   email_edited: "Draft edited",
   email_sent: "Email sent",
   email_test_sent: "Test email sent",
-  email_auto_skipped: "Automatic rejection skipped",
-  email_auto_failed: "Automatic rejection failed",
   email_send_failed: "Send failed",
   updated: "Record updated",
 };
 
-// Automatic sends are the system's own action, so say so in the log.
 function labelFor(e: EventRow): string {
-  const auto = e.detail?.auto === true;
-  if (auto && e.action === "email_sent") return "Rejection emailed automatically";
-  if (auto && e.action === "email_test_sent") return "Rejection test-emailed automatically";
-  if (auto && e.action === "email_send_failed") return "Automatic send failed";
   return EVENT_LABELS[e.action] ?? e.action;
 }
 
@@ -57,8 +49,7 @@ function describe(e: EventRow): string | null {
   if (e.action === "email_drafted" || e.action === "redraft_requested") return String(d.kind ?? "");
   if (e.action === "email_sent") return `${d.kind} to ${d.to}`;
   if (e.action === "email_test_sent") return `${d.kind} to ${d.to} (instead of ${d.intended ?? "no email on file"})`;
-  if (e.action === "pipeline_failed" || e.action === "email_send_failed" || e.action === "email_auto_failed") return String(d.error ?? "");
-  if (e.action === "email_auto_skipped") return String(d.reason ?? "");
+  if (e.action === "pipeline_failed" || e.action === "email_send_failed") return String(d.error ?? "");
   if (e.action === "founders_read_written") return `resembles ${Array.isArray(d.resembles) ? d.resembles.join(" and ") : "no one"} (${d.match_quality} match)`;
   if (e.action === "founders_read_failed") return String(d.error ?? "");
   if (e.action === "updated") {
@@ -255,7 +246,7 @@ export default async function CandidatePage({ params }: PageProps<"/candidates/[
 
         <aside className="min-w-0 space-y-5">
           {/* Remount on every server-side draft change (save, redraft, send) to reset local edits. */}
-          {email && <EmailComposer key={`${email.updated_at}-${email.status}`} candidate={c} email={email} recommendation={c.recommendation} testRecipient={testRecipient()} testSends={events.filter((e) => e.action === "email_test_sent").length} autoReject={autoSendRejectionsEnabled()} />}
+          {email && <EmailComposer key={`${email.updated_at}-${email.status}`} candidate={c} email={email} recommendation={c.recommendation} testRecipient={testRecipient()} testSends={events.filter((e) => e.action === "email_test_sent").length} />}
           <DecisionNotes candidate={c} />
           <ContactEditor candidate={c} />
           <Card>

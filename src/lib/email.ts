@@ -16,13 +16,12 @@ export function testRecipient(): string | null {
   return process.env.EMAIL_TEST_RECIPIENT?.trim() || null;
 }
 
-// Sends a candidate's draft. Two callers only: the Send route (Arjun clicking Send and confirming)
-// and, for rejections when AUTO_SEND_REJECTIONS is on, the end of the scoring pipeline (auto: true).
-// Claims the row atomically (draft/failed → sending) so a double click or a race can never send
+// Sends a candidate's draft. Called ONLY from the Send route, which is triggered by Arjun clicking
+// Send and confirming on the dashboard. Nothing else in the app may call this: no pipeline step, no
+// background job. Claims the row atomically (draft/failed → sending) so a double click can never send
 // twice, and passes an idempotency key to Resend.
-export async function sendCandidateEmail(candidateId: string, opts: { auto?: boolean } = {}) {
-  const auto = opts.auto === true;
-  const actor = auto ? "system" : "arjun";
+export async function sendCandidateEmail(candidateId: string) {
+  const actor = "arjun";
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!apiKey || !from) throw new Error("RESEND_API_KEY and EMAIL_FROM must be set");
@@ -58,7 +57,7 @@ export async function sendCandidateEmail(candidateId: string, opts: { auto?: boo
   if (error || !data) {
     const msg = redactSecrets(error?.message ?? "Unknown Resend error");
     await query("update kargo_emails set status = 'failed', error = $2 where candidate_id = $1", [candidateId, msg]);
-    await logEvent(candidateId, actor, "email_send_failed", { error: msg, auto, ...(testTo ? { test: true, to } : {}) });
+    await logEvent(candidateId, actor, "email_send_failed", { error: msg, ...(testTo ? { test: true, to } : {}) });
     throw new Error(msg);
   }
 
@@ -70,7 +69,6 @@ export async function sendCandidateEmail(candidateId: string, opts: { auto?: boo
     ]);
     await logEvent(candidateId, actor, "email_test_sent", {
       kind: claimed.kind,
-      auto,
       to,
       intended: c.email,
       resend_id: data.id,
@@ -87,6 +85,6 @@ export async function sendCandidateEmail(candidateId: string, opts: { auto?: boo
     candidateId,
     claimed.kind === "invite" ? "invite" : "reject",
   ]);
-  await logEvent(candidateId, actor, "email_sent", { kind: claimed.kind, to: c.email, resend_id: data.id, auto });
+  await logEvent(candidateId, actor, "email_sent", { kind: claimed.kind, to: c.email, resend_id: data.id });
   return { id: data.id, sentAt, test: false, to };
 }

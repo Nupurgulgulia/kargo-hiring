@@ -1,6 +1,6 @@
 # Kargo Hiring Dashboard
 
-A ranked PM / SPM shortlist for Arjun. Upload a CV, pick the role, and the app scores the candidate against **both** calibrated rubrics, writes an interview brief, and drafts an invite or rejection. **Invites are only ever sent when Arjun clicks Send and confirms. Rejections are emailed automatically once scoring finishes (`AUTO_SEND_REJECTIONS=true`).**
+A ranked PM / SPM shortlist for Arjun. Upload a CV, pick the role, and the app scores the candidate against **both** calibrated rubrics, writes an interview brief, and drafts an invite or rejection. **Nothing is ever emailed until Arjun clicks Send and confirms, invite or rejection alike.**
 
 ## Flow
 
@@ -12,7 +12,7 @@ A ranked PM / SPM shortlist for Arjun. Upload a CV, pick the role, and the app s
 | Processing + AI | `lib/pipeline.ts`, `lib/ai.ts` (Gemini Flash) | 1. Extract profile → 2. Score vs PM rubric **and** SPM rubric (AI assigns 1–5 per criterion with verbatim evidence; weighted total `Σ(score/5)×weight` computed in code) → 3. Interview brief → 4. Draft email: invite if the applied-role score clears its line (PM 65, SPM 60), otherwise rejection. The AI writes `{{first_name}}`; the real name is filled in only when sending. |
 | Founder's read | `lib/founder.ts` (AI step 5, optional) | After scoring, one paragraph in Arjun's voice on which of the eight past hires the CV most resembles and why, plus eight rated signals. Additive: it never changes a score, recommendation or email, and a failure never fails scoring. See `docs/founders-instinct.md`. |
 | Output | `/`, `/candidates/[id]` | Ranked shortlist with both scores, founder's read, brief, per-criterion evidence, editable draft, decision + notes, full activity log |
-| Send | `POST /api/candidates/[id]/send` and the end of the scoring pipeline (Resend) | **Invites:** only on Arjun's click + confirm. **Rejections:** automatic when scoring finishes, if `AUTO_SEND_REJECTIONS=true` and Arjun hasn't already marked the candidate. Either way a candidate can only be emailed once: the draft is claimed atomically and sent with a Resend idempotency key. |
+| Send | `POST /api/candidates/[id]/send` (Resend) | Only on Arjun's click + confirm, for every email. Nothing else in the app can send: not the scoring pipeline, not a background job. Atomic claim + Resend idempotency key, so a double click can't send twice. |
 
 The rubric lives in the `kargo_rubrics` table and is shown at `/rubric`; the scoring prompt and weights are read from it.
 
@@ -27,8 +27,6 @@ The rubric lives in the `kargo_rubrics` table and is shown at `/rubric`; the sco
 3. `npm run dev`, then open http://localhost:3000 and try `samples/*.txt`.
 
 On Vercel, set the same variables under Project → Settings → Environment Variables and redeploy.
-
-> **Automatic rejections:** with `AUTO_SEND_REJECTIONS=true`, a candidate who scores below the line for the role they applied for gets their rejection emailed as soon as scoring finishes, unless Arjun has already marked them (interview / hold / decline). Rejections cannot be unsent, and the rubric is a screen, not a verdict, so turn this off if you want to review them first. Invites are never automatic. Skips and failures are recorded in the activity log, and a failed send stays on the dashboard to retry.
 
 > **Email test mode:** while `EMAIL_TEST_RECIPIENT` is set, every send goes to that address instead of the candidate. The subject is unchanged, and the candidate it was meant for is recorded in the activity log. The draft stays unsent,. Delete the variable (in Vercel too) to send to real candidates.
 

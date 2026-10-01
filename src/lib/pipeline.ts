@@ -1,8 +1,6 @@
 import "server-only";
 import { draftEmail, extractProfile, scoreAgainstRubric, writeBrief } from "./ai";
-import { autoSendRejectionsEnabled, shouldAutoSend } from "./auto-send";
 import { getRubrics, json, logEvent, one, query } from "./db";
-import { sendCandidateEmail } from "./email";
 import { tryFoundersRead } from "./founder";
 import { activeModel } from "./gemini";
 import { assertNoPII } from "./pii";
@@ -105,42 +103,12 @@ export async function processCandidate(id: string, opts: { resume?: boolean } = 
 
     await setCandidate(id, { status: "ready", error: null });
     await logEvent(id, "system", "pipeline_complete", { ms: Date.now() - started });
-    await autoSendRejection(id, recommendation);
     // The founder's read comes last and is optional: it never changes a score, a recommendation or an email.
     await tryFoundersRead(id);
   } catch (err) {
     const message = errorMessage(err);
     await setCandidate(id, { status: "error", error: message });
     await logEvent(id, "system", "pipeline_failed", { error: message });
-  }
-}
-
-// Rejections only, and only when AUTO_SEND_REJECTIONS is on. A failure here never fails scoring:
-// the draft is marked failed and Arjun can retry from the dashboard.
-async function autoSendRejection(id: string, recommendation: EmailKind) {
-  try {
-    const [cand, draft] = await Promise.all([
-      one<{ decision: Candidate["decision"]; email: string | null }>("select decision, email from kargo_candidates where id = $1", [id]),
-      one<{ kind: EmailKind }>("select kind from kargo_emails where candidate_id = $1", [id]),
-    ]);
-    const check = shouldAutoSend({
-      enabled: autoSendRejectionsEnabled(),
-      recommendation,
-      draftKind: draft?.kind ?? null,
-      decision: cand?.decision ?? "pending",
-    });
-    if (!check.send) {
-      if (autoSendRejectionsEnabled() && recommendation === "reject") await logEvent(id, "system", "email_auto_skipped", { reason: check.reason });
-      return;
-    }
-    if (!cand?.email && !process.env.EMAIL_TEST_RECIPIENT?.trim()) {
-      await logEvent(id, "system", "email_auto_skipped", { reason: "no email address on file" });
-      return;
-    }
-    await sendCandidateEmail(id, { auto: true });
-  } catch (err) {
-    // sendCandidateEmail already logged and marked the draft failed; just don't fail the pipeline.
-    await logEvent(id, "system", "email_auto_failed", { error: errorMessage(err) });
   }
 }
 
