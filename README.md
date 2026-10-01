@@ -27,7 +27,7 @@ The rubric lives in the `kargo_rubrics` table and is shown at `/rubric`; the sco
 
 On Vercel, set the same variables under Project → Settings → Environment Variables and redeploy.
 
-> **Email test mode:** while `EMAIL_TEST_RECIPIENT` is set, every send goes to that address instead of the candidate, with the subject tagged `[TEST for <candidate email>]`. The draft stays unsent, and a yellow banner shows on the dashboard. Delete the variable (in Vercel too) to send to real candidates.
+> **Email test mode:** while `EMAIL_TEST_RECIPIENT` is set, every send goes to that address instead of the candidate. The subject is unchanged, and the candidate it was meant for is recorded in the activity log. The draft stays unsent, and a yellow banner shows on the dashboard. Delete the variable (in Vercel too) to send to real candidates.
 
 > **Resend:** until you verify a sending domain, `onboarding@resend.dev` only delivers to the email on your Resend account. Verify `kargo.in` (or similar) and set `EMAIL_FROM` before emailing real candidates.
 

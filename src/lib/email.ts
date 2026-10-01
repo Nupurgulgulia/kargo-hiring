@@ -37,8 +37,8 @@ export async function sendCandidateEmail(candidateId: string) {
   );
   if (!claimed) throw new Error("There is no unsent draft for this candidate (it may already have been sent).");
 
-  const personalised = personalise(claimed.subject, c.full_name);
-  const subject = testTo ? `[TEST for ${c.email ?? "no email on file"}] ${personalised}` : personalised;
+  // Same clean subject in test mode; the intended recipient is recorded in the activity log instead.
+  const subject = personalise(claimed.subject, c.full_name);
   const text = personalise(claimed.body, c.full_name);
   const resend = new Resend(apiKey);
   const { data, error } = await resend.emails.send(
